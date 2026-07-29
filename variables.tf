@@ -24,3 +24,7 @@ variable "vm_ssh_public_key" {
   description = "Öffentlicher SSH-Key, der per cloud-init in die VM injiziert wird"
   type        = string
 }
+variable "ssh_public_key" {
+  description = "SSH-Public-Key für Cloud-Init-User"
+  type        = string
+}
