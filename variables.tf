@@ -3,11 +3,11 @@ variable "proxmox_endpoint" {
   type        = string
 }
 
-variable "proxmox_api_token" {
-  description = "API Token im Format terraform@pve!tofu-token=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-  type        = string
-  sensitive   = true
-}
+#variable "proxmox_api_token" {
+#  description = "API Token im Format terraform@pve!tofu-token=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+#  type        = string
+#  sensitive   = true
+#}
 
 variable "proxmox_insecure" {
   description = "TLS-Zertifikatsprüfung überspringen (nur für selbstsigniertes PVE-Zertifikat)"
@@ -27,4 +27,21 @@ variable "vm_ssh_public_key" {
 variable "ssh_public_key" {
   description = "SSH-Public-Key für Cloud-Init-User"
   type        = string
+}
+variable "vault_address" {
+  description = "OpenBao-Endpoint"
+  type        = string
+  default     = "http://192.168.40.10:8200"
+}
+
+variable "vault_role_id" {
+  description = "AppRole Role ID fuer OpenTofu"
+  type        = string
+  sensitive   = true
+}
+
+variable "vault_secret_id" {
+  description = "AppRole Secret ID fuer OpenTofu"
+  type        = string
+  sensitive   = true
 }

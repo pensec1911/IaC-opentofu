@@ -25,20 +25,20 @@ module "openbao" {
 
   ssh_public_key = var.ssh_public_key
 }
-module "atlantis" {
-  source = "./modules/vm-instance"
-
-  name        = "atlantis"
-  node_name   = "pve01"
-  template_id = module.debian13_template.vm_id
-
-  vlan_id    = 40
-  ip_address = "192.168.40.11/24"
-  gateway    = "192.168.40.1"
-
-  cpu_cores = 2
-  memory_mb = 2048
-  disk_size = 20
-
-  ssh_public_key = var.ssh_public_key
-}
+#module "atlantis" {
+#  source = "./modules/vm-instance"
+#
+#  name        = "atlantis"
+#  node_name   = "pve01"
+#  template_id = module.debian13_template.vm_id
+#
+#  vlan_id    = 40
+#  ip_address = "192.168.40.11/24"
+#  gateway    = "192.168.40.1"
+#
+#  cpu_cores = 2
+#  memory_mb = 2048
+#  disk_size = 20
+#
+#  ssh_public_key = var.ssh_public_key
+#}

@@ -7,3 +7,4 @@ override.tf
 override.tf.json
 *.tfvars
 !*.tfvars.example
+.envrc

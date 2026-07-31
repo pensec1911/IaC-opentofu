@@ -1,21 +1,35 @@
 terraform {
   required_version = ">= 1.6.0"
-
   required_providers {
     proxmox = {
       source  = "bpg/proxmox"
       version = "~> 0.111"
+    }
+    vault = {
+      source  = "hashicorp/vault"
+      version = "~> 4.0"
+    }
+  }
+}
+
+provider "vault" {
+  address = var.vault_address
+
+  auth_login {
+    path = "auth/approle/login"
+    parameters = {
+      role_id   = var.vault_role_id
+      secret_id = var.vault_secret_id
     }
   }
 }
 
 provider "proxmox" {
   endpoint  = var.proxmox_endpoint
-  api_token = var.proxmox_api_token
-  insecure  = var.proxmox_insecure # true nur solange kein gültiges TLS-Zertifikat auf dem PVE-Node liegt
-
+  api_token = data.vault_kv_secret_v2.proxmox.data["api_token"]
+  insecure  = var.proxmox_insecure
   ssh {
     agent    = true
-    username = "root" # nur nötig für Dinge wie qemu-guest-agent Wartezeiten / manche Disk-Operationen
+    username = "root"
   }
 }
