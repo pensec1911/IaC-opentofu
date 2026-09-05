@@ -5,7 +5,7 @@ module "vm" {
   node_name   = "pve01"
   template_id = var.template_id
 
-  ip_address = "192.168.178.13/24"
+  ip_address = "192.168.178.21/24"
   gateway    = "192.168.178.1"
 
   cpu_cores = 1

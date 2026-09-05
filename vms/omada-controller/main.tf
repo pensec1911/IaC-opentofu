@@ -2,10 +2,10 @@ module "vm" {
   source = "../../modules/vm-instance"
 
   name        = "omada-controller"
-  node_name   = "pve01"
+  node_name   = "pve03"
   template_id = var.template_id
 
-  ip_address = "192.168.178.16/24"
+  ip_address = "192.168.178.26/24"
   gateway    = "192.168.178.1"
 
   cpu_cores = 2

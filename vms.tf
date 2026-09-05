@@ -53,10 +53,3 @@ module "homepage" {
   template_id    = module.debian13_template.vm_id
   ssh_public_key = var.ssh_public_key
 }
-
-#module "atlantis" {
-#  source = "./vms/atlantis"
-#
-#  template_id    = module.debian13_template.vm_id
-#  ssh_public_key = var.ssh_public_key
-#}
