@@ -26,8 +26,9 @@ variable "vm_id" {
 }
 
 variable "vlan_id" {
-  description = "VLAN-Tag für das Netzwerk-Interface"
+  description = "VLAN-Tag für das Netzwerk-Interface (null = untagged, flaches Netz)"
   type        = number
+  default     = null
 }
 
 variable "bridge" {
