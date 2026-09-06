@@ -1,4 +1,4 @@
-resource "proxmox_virtual_environment_download_file" "cloudimage" {
+resource "proxmox_download_file" "cloudimage" {
   content_type = "import"
   datastore_id = var.download_datastore_id
   node_name    = var.node_name
@@ -25,7 +25,7 @@ resource "proxmox_virtual_environment_vm" "template" {
 
   disk {
     datastore_id = var.disk_datastore_id
-    file_id      = proxmox_virtual_environment_download_file.cloudimage.id
+    file_id      = proxmox_download_file.cloudimage.id
     interface    = "scsi0"
     size         = var.disk_size
   }

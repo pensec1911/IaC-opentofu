@@ -1,0 +1,40 @@
+name: tofu test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: "1.9.0"
+
+      - name: fmt check
+        run: tofu fmt -check -recursive -diff
+
+      - name: init
+        run: tofu init -backend=false -input=false
+
+      - name: validate
+        run: tofu validate
+
+      - name: test (fleet invariants, mocked providers)
+        run: tofu test
+
+      - name: test vm-instance module
+        working-directory: modules/vm-instance
+        run: |
+          tofu init -backend=false -input=false
+          tofu test
+
+      - name: test vm-template module
+        working-directory: modules/vm-template
+        run: |
+          tofu init -backend=false -input=false
+          tofu test

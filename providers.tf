@@ -1,5 +1,5 @@
 terraform {
-  required_version = ">= 1.6.0"
+  required_version = ">= 1.8.0" # mock_provider/override_data in tests need >= 1.8
   required_providers {
     proxmox = {
       source  = "bpg/proxmox"
