@@ -1,0 +1,31 @@
+#cloud-config
+package_update: true
+packages:
+%{ if install_salt_master ~}
+  - salt-master
+%{ endif ~}
+%{ if has_minion ~}
+  - salt-minion
+%{ endif ~}
+
+write_files:
+%{ if install_salt_master ~}
+  - path: /etc/salt/master.d/auto_accept.conf
+    content: |
+      # Auto-accept every minion key for now (closed homelab LAN).
+      # Revisit once the network isn't fully trusted.
+      auto_accept: true
+%{ endif ~}
+%{ if has_minion ~}
+  - path: /etc/salt/minion.d/master.conf
+    content: |
+      master: ${salt_master_address}
+%{ endif ~}
+
+runcmd:
+%{ if install_salt_master ~}
+  - systemctl enable --now salt-master
+%{ endif ~}
+%{ if has_minion ~}
+  - systemctl enable --now salt-minion
+%{ endif ~}

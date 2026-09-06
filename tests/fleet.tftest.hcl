@@ -22,6 +22,72 @@ override_resource {
   }
 }
 
+# Same issue for every VM's Salt-bootstrap cloud-init snippet: the mocked
+# proxmox_virtual_environment_file.id needs to look like a real file_id for
+# vendor_data_file_id's validation to accept it.
+override_resource {
+  target = module.openbao.module.vm.proxmox_virtual_environment_file.salt_bootstrap
+  values = {
+    id = "local:snippets/openbao-salt-bootstrap.yaml"
+  }
+}
+
+override_resource {
+  target = module.jellyfin.module.vm.proxmox_virtual_environment_file.salt_bootstrap
+  values = {
+    id = "local:snippets/jellyfin-salt-bootstrap.yaml"
+  }
+}
+
+override_resource {
+  target = module.tailscale_router.module.vm.proxmox_virtual_environment_file.salt_bootstrap
+  values = {
+    id = "local:snippets/tailscale-router-salt-bootstrap.yaml"
+  }
+}
+
+override_resource {
+  target = module.arrstack.module.vm.proxmox_virtual_environment_file.salt_bootstrap
+  values = {
+    id = "local:snippets/arrstack-salt-bootstrap.yaml"
+  }
+}
+
+override_resource {
+  target = module.wazuh.module.vm.proxmox_virtual_environment_file.salt_bootstrap
+  values = {
+    id = "local:snippets/wazuh-salt-bootstrap.yaml"
+  }
+}
+
+override_resource {
+  target = module.omada_controller.module.vm.proxmox_virtual_environment_file.salt_bootstrap
+  values = {
+    id = "local:snippets/omada-controller-salt-bootstrap.yaml"
+  }
+}
+
+override_resource {
+  target = module.monitoring.module.vm.proxmox_virtual_environment_file.salt_bootstrap
+  values = {
+    id = "local:snippets/monitoring-salt-bootstrap.yaml"
+  }
+}
+
+override_resource {
+  target = module.homepage.module.vm.proxmox_virtual_environment_file.salt_bootstrap
+  values = {
+    id = "local:snippets/homepage-salt-bootstrap.yaml"
+  }
+}
+
+override_resource {
+  target = module.salt_master.module.vm.proxmox_virtual_environment_file.salt_bootstrap
+  values = {
+    id = "local:snippets/salt-master-salt-bootstrap.yaml"
+  }
+}
+
 variables {
   proxmox_endpoint  = "https://proxmox.invalid:8006"
   target_node       = "pve01"

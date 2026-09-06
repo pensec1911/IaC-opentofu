@@ -81,3 +81,21 @@ variable "full_clone" {
   type        = bool
   default     = true
 }
+
+variable "salt_master_address" {
+  description = "IP/Hostname des Salt-Masters. Wenn gesetzt, wird salt-minion installiert und darauf konfiguriert."
+  type        = string
+  default     = null
+}
+
+variable "install_salt_master" {
+  description = "Ob zusätzlich salt-master auf dieser Instanz installiert werden soll"
+  type        = bool
+  default     = false
+}
+
+variable "snippets_datastore_id" {
+  description = "Datastore für das Cloud-Init-Snippet (muss Content-Type 'Snippets' unterstützen, z.B. 'local')"
+  type        = string
+  default     = "local"
+}

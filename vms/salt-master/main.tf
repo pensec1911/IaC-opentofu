@@ -12,5 +12,7 @@ module "vm" {
   memory_mb = 4096
   disk_size = 20
 
-  ssh_public_key = var.ssh_public_key
+  ssh_public_key      = var.ssh_public_key
+  install_salt_master = true
+  salt_master_address = "192.168.178.28"
 }

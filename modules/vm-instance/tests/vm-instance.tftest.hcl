@@ -115,3 +115,74 @@ run "template_node_name_override_is_respected" {
     error_message = "clone.node_name should use template_node_name when it is set"
   }
 }
+
+run "no_salt_bootstrap_snippet_by_default" {
+  command = plan
+
+  # vendor_data_file_id is optional+computed, so mock_provider fills it in
+  # regardless of what our config says — the resource count is the real signal.
+  assert {
+    condition     = length(proxmox_virtual_environment_file.salt_bootstrap) == 0
+    error_message = "No cloud-init snippet should be created when Salt is not configured"
+  }
+}
+
+run "installs_salt_minion_when_master_address_set" {
+  command = plan
+
+  variables {
+    salt_master_address = "10.0.0.99"
+  }
+
+  override_resource {
+    target = proxmox_virtual_environment_file.salt_bootstrap
+    values = {
+      id = "local:snippets/test-vm-salt-bootstrap.yaml"
+    }
+  }
+
+  assert {
+    condition     = length(proxmox_virtual_environment_file.salt_bootstrap) == 1
+    error_message = "A cloud-init snippet should be created when salt_master_address is set"
+  }
+
+  assert {
+    condition     = proxmox_virtual_environment_vm.this.initialization[0].vendor_data_file_id != null
+    error_message = "vendor_data_file_id should be set when Salt bootstrap is needed"
+  }
+
+  assert {
+    condition     = strcontains(proxmox_virtual_environment_file.salt_bootstrap[0].source_raw[0].data, "master: 10.0.0.99")
+    error_message = "Rendered cloud-init should point the minion at the configured master address"
+  }
+
+  assert {
+    condition     = !strcontains(proxmox_virtual_environment_file.salt_bootstrap[0].source_raw[0].data, "salt-master")
+    error_message = "salt-master package should not be installed when only salt_master_address is set"
+  }
+}
+
+run "installs_salt_master_when_requested" {
+  command = plan
+
+  variables {
+    install_salt_master = true
+  }
+
+  override_resource {
+    target = proxmox_virtual_environment_file.salt_bootstrap
+    values = {
+      id = "local:snippets/test-vm-salt-bootstrap.yaml"
+    }
+  }
+
+  assert {
+    condition     = strcontains(proxmox_virtual_environment_file.salt_bootstrap[0].source_raw[0].data, "salt-master")
+    error_message = "Rendered cloud-init should install salt-master when install_salt_master is true"
+  }
+
+  assert {
+    condition     = strcontains(proxmox_virtual_environment_file.salt_bootstrap[0].source_raw[0].data, "auto_accept: true")
+    error_message = "Master should be configured to auto-accept minion keys"
+  }
+}
