@@ -1,9 +1,10 @@
 module "vm" {
   source = "../../modules/vm-instance"
 
-  name        = "jellyfin"
-  node_name   = "pve02"
-  template_id = var.template_id
+  name               = "jellyfin"
+  node_name          = "pve02"
+  template_node_name = "pve01"
+  template_id        = var.template_id
 
   ip_address = "192.168.178.24/24"
   gateway    = "192.168.178.1"

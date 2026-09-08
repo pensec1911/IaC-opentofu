@@ -1,9 +1,10 @@
 module "vm" {
   source = "../../modules/vm-instance"
 
-  name        = "openbao"
-  node_name   = "pve03"
-  template_id = var.template_id
+  name               = "openbao"
+  node_name          = "pve03"
+  template_node_name = "pve01"
+  template_id        = var.template_id
 
   ip_address = "192.168.178.20/24"
   gateway    = "192.168.178.1"

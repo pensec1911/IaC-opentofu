@@ -1,5 +1,5 @@
 variable "proxmox_endpoint" {
-  description = "Proxmox API endpoint, z.B. https://pve01.ilpaa.xyz:8006"
+  description = "Proxmox API endpoint, z.B. https://192.168.178.11:8006"
   type        = string
 }
 
@@ -31,7 +31,7 @@ variable "ssh_public_key" {
 variable "vault_address" {
   description = "OpenBao-Endpoint"
   type        = string
-  default     = "http://192.168.40.10:8200"
+  default     = "http://192.168.178.20:8200"
 }
 
 variable "vault_role_id" {

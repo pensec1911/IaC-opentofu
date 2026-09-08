@@ -10,7 +10,7 @@ module "vm" {
 
   cpu_cores = 1
   memory_mb = 1024
-  disk_size = 8
+  disk_size = 20
 
   ssh_public_key      = var.ssh_public_key
   salt_master_address = "192.168.178.28"

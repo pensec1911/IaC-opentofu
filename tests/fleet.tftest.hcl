@@ -26,23 +26,9 @@ override_resource {
 # proxmox_virtual_environment_file.id needs to look like a real file_id for
 # vendor_data_file_id's validation to accept it.
 override_resource {
-  target = module.openbao.module.vm.proxmox_virtual_environment_file.salt_bootstrap
-  values = {
-    id = "local:snippets/openbao-salt-bootstrap.yaml"
-  }
-}
-
-override_resource {
   target = module.jellyfin.module.vm.proxmox_virtual_environment_file.salt_bootstrap
   values = {
     id = "local:snippets/jellyfin-salt-bootstrap.yaml"
-  }
-}
-
-override_resource {
-  target = module.tailscale_router.module.vm.proxmox_virtual_environment_file.salt_bootstrap
-  values = {
-    id = "local:snippets/tailscale-router-salt-bootstrap.yaml"
   }
 }
 
@@ -57,13 +43,6 @@ override_resource {
   target = module.wazuh.module.vm.proxmox_virtual_environment_file.salt_bootstrap
   values = {
     id = "local:snippets/wazuh-salt-bootstrap.yaml"
-  }
-}
-
-override_resource {
-  target = module.omada_controller.module.vm.proxmox_virtual_environment_file.salt_bootstrap
-  values = {
-    id = "local:snippets/omada-controller-salt-bootstrap.yaml"
   }
 }
 

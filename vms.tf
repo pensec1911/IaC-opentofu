@@ -1,9 +1,10 @@
-module "openbao" {
-  source = "./vms/openbao"
-
-  template_id    = module.debian13_template.vm_id
-  ssh_public_key = var.ssh_public_key
-}
+# openbao wird nie mit OpenTofu erstellt/verwaltet — einmalig manuell für Secrets angelegt.
+#module "openbao" {
+#  source = "./vms/openbao"
+#
+#  template_id    = module.debian13_template.vm_id
+#  ssh_public_key = var.ssh_public_key
+#}
 
 module "jellyfin" {
   source = "./vms/jellyfin"
@@ -12,12 +13,12 @@ module "jellyfin" {
   ssh_public_key = var.ssh_public_key
 }
 
-module "tailscale_router" {
-  source = "./vms/tailscale-router"
-
-  template_id    = module.debian13_template.vm_id
-  ssh_public_key = var.ssh_public_key
-}
+#module "tailscale_router" {
+#  source = "./vms/tailscale-router"
+#
+#  template_id    = module.debian13_template.vm_id
+#  ssh_public_key = var.ssh_public_key
+#}
 
 module "arrstack" {
   source = "./vms/arrstack"
@@ -33,12 +34,12 @@ module "wazuh" {
   ssh_public_key = var.ssh_public_key
 }
 
-module "omada_controller" {
-  source = "./vms/omada-controller"
-
-  template_id    = module.debian13_template.vm_id
-  ssh_public_key = var.ssh_public_key
-}
+#module "omada_controller" {
+#  source = "./vms/omada-controller"
+#
+#  template_id    = module.debian13_template.vm_id
+#  ssh_public_key = var.ssh_public_key
+#}
 
 module "monitoring" {
   source = "./vms/monitoring"
