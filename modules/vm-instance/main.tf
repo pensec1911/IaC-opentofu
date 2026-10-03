@@ -1,5 +1,12 @@
 locals {
   needs_salt_bootstrap = var.install_salt_master || var.salt_master_address != null
+
+  # Fester File-ID-String statt Referenz auf die Snippet-Resource. vendor-data
+  # wird nur beim ersten Boot gelesen — referenziert die VM die Resource
+  # direkt, baut OpenTofu bei jeder Textaenderung am Bootstrap die komplette VM
+  # neu, ohne dass das auf der laufenden VM irgendetwas bewirken wuerde.
+  # Rebuild bei Bedarf bewusst ueber `tofu apply -replace=...`.
+  salt_bootstrap_file_id = "${var.snippets_datastore_id}:snippets/${var.name}-salt-bootstrap.yaml"
 }
 
 resource "proxmox_virtual_environment_file" "salt_bootstrap" {
@@ -15,11 +22,16 @@ resource "proxmox_virtual_environment_file" "salt_bootstrap" {
       install_salt_master = var.install_salt_master
       has_minion          = var.salt_master_address != null
       salt_master_address = var.salt_master_address != null ? var.salt_master_address : ""
+      salt_version_pin    = var.salt_version_pin
     })
   }
 }
 
 resource "proxmox_virtual_environment_vm" "this" {
+  # Ohne die Resource-Referenz in vendor_data_file_id muss die Reihenfolge
+  # explizit sein: das Snippet muss hochgeladen sein, bevor die VM bootet.
+  depends_on = [proxmox_virtual_environment_file.salt_bootstrap]
+
   name      = var.name
   node_name = var.node_name
   vm_id     = var.vm_id
@@ -53,7 +65,7 @@ resource "proxmox_virtual_environment_vm" "this" {
   }
 
   initialization {
-    vendor_data_file_id = local.needs_salt_bootstrap ? proxmox_virtual_environment_file.salt_bootstrap[0].id : null
+    vendor_data_file_id = local.needs_salt_bootstrap ? local.salt_bootstrap_file_id : null
 
     ip_config {
       ipv4 {

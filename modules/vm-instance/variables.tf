@@ -99,3 +99,9 @@ variable "snippets_datastore_id" {
   type        = string
   default     = "local"
 }
+
+variable "salt_version_pin" {
+  description = "apt-Pin fuer die Salt-Pakete aus dem Broadcom-Repo (Salt ist nicht mehr in Debian enthalten). Default ist die 3008-LTS-Linie."
+  type        = string
+  default     = "3008.*"
+}

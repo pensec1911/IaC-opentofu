@@ -64,3 +64,9 @@ variable "memory_mb" {
   type        = number
   default     = 2048
 }
+
+variable "overwrite" {
+  description = "Image neu herunterladen, wenn Groesse/Checksum im Datastore abweichen. false verhindert, dass ein geaendertes Upstream-Image das Template ungefragt ersetzt."
+  type        = bool
+  default     = false
+}

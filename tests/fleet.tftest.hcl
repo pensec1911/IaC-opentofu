@@ -15,6 +15,8 @@ override_data {
 
 # The mocked download_file.id is a random string; the template VM's file_id
 # validation requires the real "datastore:content-type/filename" shape.
+# An unkeyed module address covers every for_each instance (pve01/02/03);
+# override_resource rejects instance keys.
 override_resource {
   target = module.debian13_template.proxmox_download_file.cloudimage
   values = {

@@ -1,14 +1,34 @@
 #cloud-config
+# Salt ist nicht mehr Teil von Debian — in trixie sind die Salt-Pakete komplett
+# entfernt, darum kommen sie aus dem offiziellen Salt-Project-Repo bei Broadcom.
+# curl und gnupg holen wir noch aus Debian selbst, um den Repo-Key importieren
+# zu koennen.
 package_update: true
 packages:
-%{ if install_salt_master ~}
-  - salt-master
-%{ endif ~}
-%{ if has_minion ~}
-  - salt-minion
-%{ endif ~}
+  - curl
+  - gnupg
 
 write_files:
+  # defer, weil write_files sonst in der config-Stage laeuft: das apt-update von
+  # cloud-init wuerde dann auf ein Repo stossen, dessen Keyring erst in runcmd
+  # angelegt wird, und mit einem Fehler abbrechen (cloud-init: "degraded").
+  - path: /etc/apt/sources.list.d/salt.sources
+    defer: true
+    content: |
+      Types: deb
+      URIs: https://packages.broadcom.com/artifactory/saltproject-deb/
+      Suites: stable
+      Components: main
+      Signed-By: /etc/apt/keyrings/salt-archive-keyring.pgp
+
+  # Pin auf die LTS-Linie, damit ein spaeterer Rebuild nicht ungefragt auf eine
+  # neue Major-Version springt und Master/Minion auseinanderlaufen.
+  - path: /etc/apt/preferences.d/salt-pin-1001
+    content: |
+      Package: salt-*
+      Pin: version ${salt_version_pin}
+      Pin-Priority: 1001
+
 %{ if install_salt_master ~}
   - path: /etc/salt/master.d/auto_accept.conf
     content: |
@@ -22,10 +42,17 @@ write_files:
       master: ${salt_master_address}
 %{ endif ~}
 
+# Installation muss in runcmd laufen: die packages-Stage von cloud-init ist
+# durch, bevor das Salt-Repo ueberhaupt eingerichtet ist.
 runcmd:
+  - install -d -m 0755 /etc/apt/keyrings
+  - curl -fsSL https://packages.broadcom.com/artifactory/api/security/keypair/SaltProjectKey/public | gpg --dearmor -o /etc/apt/keyrings/salt-archive-keyring.pgp
+  - apt-get update
 %{ if install_salt_master ~}
+  - apt-get install -y salt-master
   - systemctl enable --now salt-master
 %{ endif ~}
 %{ if has_minion ~}
+  - apt-get install -y salt-minion
   - systemctl enable --now salt-minion
 %{ endif ~}

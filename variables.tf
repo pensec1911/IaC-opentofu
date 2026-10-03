@@ -45,3 +45,9 @@ variable "vault_secret_id" {
   type        = string
   sensitive   = true
 }
+
+variable "proxmox_ssh_private_key_path" {
+  description = "Privater SSH-Key, mit dem sich der Provider als root auf die PVE-Nodes verbindet (fuer Snippet-Uploads). Muss in authorized_keys von root auf allen Nodes liegen."
+  type        = string
+  default     = "~/.ssh/homelab"
+}

@@ -1,10 +1,13 @@
+locals {
+  node = "pve03"
+}
+
 module "vm" {
   source = "../../modules/vm-instance"
 
-  name               = "omada-controller"
-  node_name          = "pve03"
-  template_node_name = "pve01"
-  template_id        = var.template_id
+  name        = "omada-controller"
+  node_name   = local.node
+  template_id = var.template_ids[local.node]
 
   ip_address = "192.168.178.26/24"
   gateway    = "192.168.178.1"

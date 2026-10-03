@@ -27,13 +27,24 @@ provider "vault" {
   }
 }
 
+locals {
+  # fileexists-Guard, damit `tofu test`/CI ohne den Key durchlaeuft (dort ist
+  # der Provider gemockt und SSH wird nie benutzt).
+  proxmox_ssh_private_key = fileexists(pathexpand(var.proxmox_ssh_private_key_path)) ? file(pathexpand(var.proxmox_ssh_private_key_path)) : null
+}
+
 provider "proxmox" {
   endpoint  = var.proxmox_endpoint
   api_token = data.vault_kv_secret_v2.proxmox.data["api_token"]
   insecure  = var.proxmox_insecure
+  # Der Provider braucht SSH als root fuer Dinge, die die PVE-API nicht kann —
+  # v.a. Snippet-Uploads (content_type "snippets"). Key direkt statt ssh-agent:
+  # ein nicht geladener Agent hat hier schon zweimal mitten im Apply gestoppt.
+  # ~/.ssh/config wird vom Provider bewusst ignoriert.
   ssh {
-    agent    = true
-    username = "root"
+    agent       = false
+    username    = "root"
+    private_key = local.proxmox_ssh_private_key
 
     node {
       name    = "pve01"
