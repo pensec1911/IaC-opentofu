@@ -55,6 +55,13 @@ module "homepage" {
   ssh_public_key = var.ssh_public_key
 }
 
+module "forgejo" {
+  source = "./vms/forgejo"
+
+  template_ids   = local.template_ids
+  ssh_public_key = var.ssh_public_key
+}
+
 module "salt_master" {
   source = "./vms/salt-master"
 

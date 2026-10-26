@@ -63,6 +63,13 @@ override_resource {
 }
 
 override_resource {
+  target = module.forgejo.module.vm.proxmox_virtual_environment_file.salt_bootstrap
+  values = {
+    id = "local:snippets/forgejo-salt-bootstrap.yaml"
+  }
+}
+
+override_resource {
   target = module.salt_master.module.vm.proxmox_virtual_environment_file.salt_bootstrap
   values = {
     id = "local:snippets/salt-master-salt-bootstrap.yaml"

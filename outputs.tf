@@ -6,6 +6,7 @@ locals {
     wazuh       = { ip = module.wazuh.ip_address, node = module.wazuh.node_name, memory_mb = module.wazuh.memory_mb }
     monitoring  = { ip = module.monitoring.ip_address, node = module.monitoring.node_name, memory_mb = module.monitoring.memory_mb }
     homepage    = { ip = module.homepage.ip_address, node = module.homepage.node_name, memory_mb = module.homepage.memory_mb }
+    forgejo     = { ip = module.forgejo.ip_address, node = module.forgejo.node_name, memory_mb = module.forgejo.memory_mb }
     salt_master = { ip = module.salt_master.ip_address, node = module.salt_master.node_name, memory_mb = module.salt_master.memory_mb }
   }
 
