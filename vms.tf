@@ -27,12 +27,15 @@ module "arrstack" {
   ssh_public_key = var.ssh_public_key
 }
 
-module "wazuh" {
-  source = "./vms/wazuh"
-
-  template_ids   = local.template_ids
-  ssh_public_key = var.ssh_public_key
-}
+# wazuh vorerst abgeschaltet (2026-11-11), um 8 GB auf pve01 freizumachen. Zum
+# Reaktivieren einkommentieren (+ outputs.tf, tests/fleet.tftest.hcl) und in
+# IaC-salt pillar/features.jinja `wazuh: True` setzen.
+#module "wazuh" {
+#  source = "./vms/wazuh"
+#
+#  template_ids   = local.template_ids
+#  ssh_public_key = var.ssh_public_key
+#}
 
 #module "omada_controller" {
 #  source = "./vms/omada-controller"

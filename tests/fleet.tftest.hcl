@@ -41,12 +41,13 @@ override_resource {
   }
 }
 
-override_resource {
-  target = module.wazuh.module.vm.proxmox_virtual_environment_file.salt_bootstrap
-  values = {
-    id = "local:snippets/wazuh-salt-bootstrap.yaml"
-  }
-}
+# wazuh ist in vms.tf auskommentiert.
+#override_resource {
+#  target = module.wazuh.module.vm.proxmox_virtual_environment_file.salt_bootstrap
+#  values = {
+#    id = "local:snippets/wazuh-salt-bootstrap.yaml"
+#  }
+#}
 
 override_resource {
   target = module.monitoring.module.vm.proxmox_virtual_environment_file.salt_bootstrap
