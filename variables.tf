@@ -27,7 +27,7 @@ variable "ssh_public_key" {
 variable "vault_address" {
   description = "OpenBao-Endpoint"
   type        = string
-  default     = "http://192.168.178.20:8200"
+  default     = "https://192.168.178.20:8200"
 }
 
 variable "vault_role_id" {
