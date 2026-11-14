@@ -27,8 +27,7 @@ locals {
   # VMs, die laufen, aber nicht (mehr) von Tofu verwaltet werden (vms.tf
   # auskommentiert, nicht im State). Nur Name/IP/Node — Groesse ist hier unbekannt.
   netbox_unmanaged_vms = {
-    openbao            = { ip = "192.168.178.20/24", node = "pve03" }
-    "tailscale-router" = { ip = "192.168.178.21/24", node = "pve01" }
+    openbao = { ip = "192.168.178.20/24", node = "pve03" }
   }
 
   # Minion-ID = VM-Name, also Bindestrich statt des Modul-Unterstrichs.
@@ -151,6 +150,7 @@ resource "netbox_virtual_machine" "this" {
   for_each = local.netbox_vms
 
   name         = each.key
+  site_id      = netbox_site.home.id # NetBox setzt sie ohnehin vom Cluster — sonst Dauer-Diff
   cluster_id   = netbox_cluster.pve.id
   device_id    = netbox_device.this[each.value.node].id
   vcpus        = each.value.vcpus

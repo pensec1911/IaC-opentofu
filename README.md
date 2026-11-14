@@ -41,7 +41,7 @@ Alles mit Tag `opentofu` nicht in der UI aendern, der naechste Apply setzt es zu
 und Services stehen weiter in IaC-salt (`.claude/docs/inventory.md`).
 
 - VMs aus `vms.tf` kommen automatisch (ueber `local.vm_inventory`). Laufende VMs ohne
-  Tofu-Modul (openbao, tailscale-router) stehen in `local.netbox_unmanaged_vms` — beim
+  Tofu-Modul (openbao) stehen in `local.netbox_unmanaged_vms` — beim
   Ein-/Auskommentieren eines Moduls dort nachziehen (`make test` prueft auf Doppelte).
 - Provider `e-breuninger/netbox` 5.8.x: offiziell bis NetBox 4.6 getestet, beim Init kommt
   eine (nicht blockierende) Versionswarnung. 6.x ist ein Rewrite mit Umbenennungen
