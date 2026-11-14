@@ -60,7 +60,7 @@ Einmalig, manuell (vor dem ersten Apply mit `netbox.tf`):
    interface), extras (tag); Assignment → Users: `opentofu`; keine Constraints.
 2. Admin → API Tokens → Add: User `opentofu`, Write enabled (v2, `nbt_…`).
 3. `bao kv put -mount=homelab netbox/tofu api_token=<token>` (auf dem OpenBao-Host).
-4. Die Policy der Tofu-AppRole um `read` auf `homelab/data/netbox/tofu` erweitern (bisher nur
+4. Die Policy `tofu-proxmox` (AppRole `tofu`) um `read` auf `homelab/data/netbox/tofu` erweitern (bisher nur
    `homelab/data/proxmox`).
 5. `tofu plan` — erwartet: nur `netbox_*`-Ressourcen neu, keine VM-Aenderung.
 
