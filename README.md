@@ -52,11 +52,13 @@ und Services stehen weiter in IaC-salt (`.claude/docs/inventory.md`).
 
 Einmalig, manuell (vor dem ersten Apply mit `netbox.tf`):
 
-1. NetBox-UI → Admin → Users: User `opentofu` (kein Superuser), eine Permission mit den
-   Aktionen view/add/change/delete auf: dcim (site, manufacturer, device type, device role,
-   device, interface), ipam (prefix, ip address), virtualization (cluster type, cluster,
-   virtual machine, vm interface), extras (tag).
-2. Unter diesem User ein API-Token (v2, `nbt_…`, Write enabled) anlegen.
+1. NetBox-UI → Admin → Users: User `opentofu` anlegen (kein Superuser). Das
+   Permissions-Feld dort listet nur bestehende Permissions — also danach:
+   Admin → Permissions → Add (`/users/permissions/add/`): Aktionen view/add/change/delete,
+   Object types dcim (site, manufacturer, device type, device role, device, interface),
+   ipam (prefix, ip address), virtualization (cluster type, cluster, virtual machine,
+   interface), extras (tag); Assignment → Users: `opentofu`; keine Constraints.
+2. Admin → API Tokens → Add: User `opentofu`, Write enabled (v2, `nbt_…`).
 3. `bao kv put -mount=homelab netbox/tofu api_token=<token>` (auf dem OpenBao-Host).
 4. Die Policy der Tofu-AppRole um `read` auf `homelab/data/netbox/tofu` erweitern (bisher nur
    `homelab/data/proxmox`).
