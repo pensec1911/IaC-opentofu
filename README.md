@@ -108,13 +108,15 @@ bleibt lokal. Die Jobs bekommen **nur lesende Credentials**:
    `pveum user token add tofu-plan@pve ci --privsep 0` →
    `bao kv put -mount=homelab proxmox/plan api_token=tofu-plan@pve!ci=<uuid>` (das ganze
    `USER@REALM!TOKENID=UUID`, nicht nur die UUID).
-   PVEAuditor allein reicht fuer `plan` nicht: die Disk-Infos der Templates brauchen
-   `VM.Config.Disk` auf der VM, die Snippets auf `local` `Datastore.AllocateSpace` — ohne
-   das scheitert der Plan bzw. haelt die Snippets fuer geloescht. Darum eng begrenzt:
-   `pveum role add TofuPlanExtra -privs "VM.Config.Disk Datastore.AllocateSpace"`, ACL
-   mit dieser Rolle nur auf `/vms/9000`, `/vms/9001`, `/vms/9002` (Templates) und
-   `/storage/local`. Restrisiko: der Token kann Template-Disks aendern und ISOs/Templates
-   nach `local` laden — Snippets nicht (die PVE-API kann keine hochladen).
+   PVEAuditor allein reicht fuer `plan` (mit Refresh) nicht: der Provider liest die
+   Disk-Infos **jeder** VM (`VM.Config.Disk`) und die Snippets auf `local`
+   (`Datastore.AllocateSpace`). Darum zusaetzlich auf `/`:
+   `pveum role add TofuPlanExtra -privs "VM.Config.Disk Datastore.AllocateSpace"`,
+   `pveum acl modify / --users tofu-plan@pve --roles TofuPlanExtra`. **Nicht** auf
+   einzelnen Pfaden (`/vms/<id>`, `/storage/local`): ein spezifischer Eintrag ersetzt fuer den
+   User den geerbten von `/`, PVEAuditor waere dort weg. Restrisiko (bewusst akzeptiert,
+   2026-11-14): wer an die CI-Secrets kommt, kann Disks aller VMs aendern und Dateien nach
+   `local` laden — keine VMs anlegen/loeschen.
 2. NetBox: zweiter API-Token fuer `opentofu`, **Write aus** →
    `bao kv put -mount=homelab netbox/tofu-plan api_token=<token>`.
 3. OpenBao: Policy `tofu-plan` mit nur `read` auf `homelab/data/proxmox/plan` und
