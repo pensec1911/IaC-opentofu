@@ -108,15 +108,19 @@ bleibt lokal. Die Jobs bekommen **nur lesende Credentials**:
    `pveum user token add tofu-plan@pve ci --privsep 0` →
    `bao kv put -mount=homelab proxmox/plan api_token=tofu-plan@pve!ci=<uuid>` (das ganze
    `USER@REALM!TOKENID=UUID`, nicht nur die UUID).
-   PVEAuditor allein reicht fuer `plan` (mit Refresh) nicht: der Provider liest die
-   Disk-Infos **jeder** VM (`VM.Config.Disk`) und die Snippets auf `local`
-   (`Datastore.AllocateSpace`). Darum zusaetzlich auf `/`:
-   `pveum role add TofuPlanExtra -privs "VM.Config.Disk Datastore.AllocateSpace"`,
-   `pveum acl modify / --users tofu-plan@pve --roles TofuPlanExtra`. **Nicht** auf
-   einzelnen Pfaden (`/vms/<id>`, `/storage/local`): ein spezifischer Eintrag ersetzt fuer den
-   User den geerbten von `/`, PVEAuditor waere dort weg. Restrisiko (bewusst akzeptiert,
-   2026-11-14): wer an die CI-Secrets kommt, kann Disks aller VMs aendern und Dateien nach
-   `local` laden — keine VMs anlegen/loeschen.
+   PVEAuditor allein reicht fuer `plan` (mit Refresh) nicht:
+   - Disk-Infos **jeder** VM brauchen `VM.Config.Disk` →
+     `pveum role add TofuPlanExtra -privs VM.Config.Disk`,
+     `pveum acl modify / --users tofu-plan@pve --roles TofuPlanExtra`.
+   - Snippets zeigt PVE 9 nur mit `Datastore.Allocate` (`check_volume_access` in
+     `PVE/Storage.pm`; `AllocateSpace` reicht nicht) → nur auf `local`:
+     `pveum role add TofuPlanLocal -privs Datastore.Allocate`,
+     `pveum acl modify /storage/local --users tofu-plan@pve --roles PVEAuditor,TofuPlanLocal`.
+     PVEAuditor dort nochmal, weil ein spezifischer ACL-Eintrag fuer den User den geerbten
+     von `/` ersetzt.
+   Restrisiko (bewusst akzeptiert, 2026-11-14): wer an die CI-Secrets kommt, kann Disks aller
+   VMs aendern und auf `local` alles loeschen/ersetzen (ISOs, CT-Templates, Snippets,
+   Backups) — keine VMs anlegen/loeschen, `local-lvm` nur ueber VM.Config.Disk.
 2. NetBox: zweiter API-Token fuer `opentofu`, **Write aus** →
    `bao kv put -mount=homelab netbox/tofu-plan api_token=<token>`.
 3. OpenBao: Policy `tofu-plan` mit nur `read` auf `homelab/data/proxmox/plan` und
