@@ -51,3 +51,9 @@ variable "proxmox_ssh_private_key_path" {
   type        = string
   default     = "~/.ssh/homelab"
 }
+
+variable "netbox_url" {
+  description = "NetBox-Endpoint (formulas/netbox in IaC-salt, auf forgejo)"
+  type        = string
+  default     = "http://192.168.178.29:8000"
+}

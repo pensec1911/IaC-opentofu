@@ -17,3 +17,13 @@ output "memory_mb" {
   description = "Konfiguriertes RAM in MB"
   value       = var.memory_mb
 }
+
+output "cpu_cores" {
+  description = "Konfigurierte CPU-Cores"
+  value       = var.cpu_cores
+}
+
+output "disk_size" {
+  description = "Konfigurierte Disk-Groesse in GB (null = Template-Groesse)"
+  value       = var.disk_size
+}

@@ -4,8 +4,67 @@
 mock_provider "proxmox" {}
 mock_provider "vault" {}
 
+# Gemockte IDs sind sonst Zufallsstrings; die NetBox-Ressourcen reichen sie als
+# Zahlen (cluster_id, device_id, ...) weiter.
+mock_provider "netbox" {
+  mock_resource "netbox_tag" {
+    defaults = { id = "1" }
+  }
+  mock_resource "netbox_site" {
+    defaults = { id = "1" }
+  }
+  mock_resource "netbox_prefix" {
+    defaults = { id = "1" }
+  }
+  mock_resource "netbox_manufacturer" {
+    defaults = { id = "1" }
+  }
+  mock_resource "netbox_device_type" {
+    defaults = { id = "1" }
+  }
+  mock_resource "netbox_device_role" {
+    defaults = { id = "1" }
+  }
+  mock_resource "netbox_cluster_type" {
+    defaults = { id = "1" }
+  }
+  mock_resource "netbox_cluster" {
+    defaults = { id = "1" }
+  }
+  mock_resource "netbox_device" {
+    defaults = { id = "1" }
+  }
+  mock_resource "netbox_device_interface" {
+    defaults = { id = "1" }
+  }
+  mock_resource "netbox_device_primary_ip" {
+    defaults = { id = "1" }
+  }
+  mock_resource "netbox_virtual_machine" {
+    defaults = { id = "1" }
+  }
+  mock_resource "netbox_interface" {
+    defaults = { id = "1" }
+  }
+  mock_resource "netbox_ip_address" {
+    defaults = { id = "1" }
+  }
+  mock_resource "netbox_primary_ip" {
+    defaults = { id = "1" }
+  }
+}
+
 override_data {
   target = data.vault_kv_secret_v2.proxmox
+  values = {
+    data = {
+      api_token = "mocked-token"
+    }
+  }
+}
+
+override_data {
+  target = data.vault_kv_secret_v2.netbox
   values = {
     data = {
       api_token = "mocked-token"
@@ -105,5 +164,24 @@ run "no_node_exceeds_its_16gb_ram_budget" {
   assert {
     condition     = alltrue([for mb in values(output.memory_by_node_mb) : mb <= 16384])
     error_message = "A Proxmox node's combined VM memory_mb exceeds its 16GB capacity"
+  }
+}
+
+# Wie oben, aber inkl. der nicht von Tofu verwalteten VMs und der physischen
+# Geraete — alles, was nach NetBox geht.
+run "netbox_has_no_duplicate_ip_or_name" {
+  command = plan
+
+  assert {
+    condition = length(distinct(concat(
+      [for ip in netbox_ip_address.vm : ip.ip_address],
+      [for ip in netbox_ip_address.device : ip.ip_address],
+    ))) == length(netbox_ip_address.vm) + length(netbox_ip_address.device)
+    error_message = "Two NetBox entries share an IP — check netbox.tf (netbox_unmanaged_vms, netbox_devices) against vms/*/main.tf"
+  }
+
+  assert {
+    condition     = length(setintersection(keys(local.netbox_unmanaged_vms), keys(local.netbox_vms))) == length(local.netbox_unmanaged_vms) && length(local.netbox_vms) == length(local.vm_inventory) + length(local.netbox_unmanaged_vms)
+    error_message = "A VM in netbox_unmanaged_vms is also managed by Tofu — remove it from netbox_unmanaged_vms"
   }
 }

@@ -9,6 +9,10 @@ terraform {
       source  = "hashicorp/vault"
       version = "~> 4.0"
     }
+    netbox = {
+      source  = "e-breuninger/netbox"
+      version = "~> 5.8.0"
+    }
   }
 }
 
@@ -28,6 +32,14 @@ provider "vault" {
 }
 
 locals {
+  # Proxmox-Nodes und ihre Management-IPs. Einzige Stelle: auch netbox.tf liest
+  # sie (Nodes als Devices).
+  pve_nodes = {
+    pve01 = "192.168.178.11"
+    pve02 = "192.168.178.12"
+    pve03 = "192.168.178.13"
+  }
+
   # fileexists-Guard, damit `tofu test`/CI ohne den Key durchlaeuft (dort ist
   # der Provider gemockt und SSH wird nie benutzt).
   proxmox_ssh_private_key = fileexists(pathexpand(var.proxmox_ssh_private_key_path)) ? file(pathexpand(var.proxmox_ssh_private_key_path)) : null
@@ -46,17 +58,18 @@ provider "proxmox" {
     username    = "root"
     private_key = local.proxmox_ssh_private_key
 
-    node {
-      name    = "pve01"
-      address = "192.168.178.11"
-    }
-    node {
-      name    = "pve02"
-      address = "192.168.178.12"
-    }
-    node {
-      name    = "pve03"
-      address = "192.168.178.13"
+    dynamic "node" {
+      for_each = local.pve_nodes
+      content {
+        name    = node.key
+        address = node.value
+      }
     }
   }
+}
+
+# NetBox ist reines Inventar: OpenTofu schreibt, niemand liest daraus (netbox.tf).
+provider "netbox" {
+  server_url = var.netbox_url
+  api_token  = data.vault_kv_secret_v2.netbox.data["api_token"]
 }

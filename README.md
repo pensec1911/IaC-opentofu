@@ -32,6 +32,36 @@ wird vom Provider grundsaetzlich ignoriert.
   ersten Boot gelesen, darum referenziert die VM das Snippet ueber eine feste
   File-ID. Rebuild bei Bedarf bewusst per `tofu apply -replace=module.<vm>.module.vm.proxmox_virtual_environment_vm.this`.
 
+## NetBox
+
+`netbox.tf` schreibt bei jedem Apply Proxmox-Nodes, NAS, FRITZ!Box, alle VMs und ihre IPs nach
+NetBox (`formulas/netbox` in IaC-salt, http://192.168.178.29:8000). Richtung ist fest:
+**Tofu schreibt, NetBox liest nur** — nichts (weder Tofu noch Salt) liest aus NetBox zurueck.
+Alles mit Tag `opentofu` nicht in der UI aendern, der naechste Apply setzt es zurueck. Ports
+und Services stehen weiter in IaC-salt (`.claude/docs/inventory.md`).
+
+- VMs aus `vms.tf` kommen automatisch (ueber `local.vm_inventory`). Laufende VMs ohne
+  Tofu-Modul (openbao, tailscale-router) stehen in `local.netbox_unmanaged_vms` — beim
+  Ein-/Auskommentieren eines Moduls dort nachziehen (`make test` prueft auf Doppelte).
+- Provider `e-breuninger/netbox` 5.8.x: offiziell bis NetBox 4.6 getestet, beim Init kommt
+  eine (nicht blockierende) Versionswarnung. 6.x ist ein Rewrite mit Umbenennungen
+  (`netbox_interface` → `netbox_virtual_machine_interface`, Primary-IPs) — Upgrade bewusst,
+  mit Migration Guide.
+- **NetBox down = `tofu plan/apply` scheitert** (Refresh). Forgejo selbst neu bauen:
+  `tofu apply -target=module.forgejo`, danach normal.
+
+Einmalig, manuell (vor dem ersten Apply mit `netbox.tf`):
+
+1. NetBox-UI → Admin → Users: User `opentofu` (kein Superuser), eine Permission mit den
+   Aktionen view/add/change/delete auf: dcim (site, manufacturer, device type, device role,
+   device, interface), ipam (prefix, ip address), virtualization (cluster type, cluster,
+   virtual machine, vm interface), extras (tag).
+2. Unter diesem User ein API-Token (v2, `nbt_…`, Write enabled) anlegen.
+3. `bao kv put -mount=homelab netbox/tofu api_token=<token>` (auf dem OpenBao-Host).
+4. Die Policy der Tofu-AppRole um `read` auf `homelab/data/netbox/tofu` erweitern (bisher nur
+   `homelab/data/proxmox`).
+5. `tofu plan` — erwartet: nur `netbox_*`-Ressourcen neu, keine VM-Aenderung.
+
 ## Testing
 
 Three layers, all runnable offline (no real Proxmox or OpenBao access needed) via `mock_provider`:
@@ -40,7 +70,7 @@ Three layers, all runnable offline (no real Proxmox or OpenBao access needed) vi
 |---|---|---|
 | Format & syntax | `make fmt-check`, `make validate` | drift, typos, type errors |
 | Module unit tests | `make test-modules` | regressions in `modules/vm-instance` and `modules/vm-template` behavior (optional `disk_size`/`vlan_id`, checksum handling, template validation, etc.) — see `<module>/tests/*.tftest.hcl` |
-| Fleet invariants | `make test` | whole-repo checks in `tests/fleet.tftest.hcl`: no two VMs share an `ip_address`, no Proxmox node's combined `memory_mb` exceeds its 16GB budget |
+| Fleet invariants | `make test` | whole-repo checks in `tests/fleet.tftest.hcl`: no two VMs share an `ip_address`, no Proxmox node's combined `memory_mb` exceeds its 16GB budget, no duplicate IP/name among the NetBox entries (incl. unmanaged VMs and devices) |
 
 Run everything with `make ci`. The same steps run in GitHub Actions on every push/PR (`.github/workflows/test.yml`).
 

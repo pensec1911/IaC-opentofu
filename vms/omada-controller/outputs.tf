@@ -13,3 +13,11 @@ output "node_name" {
 output "memory_mb" {
   value = module.vm.memory_mb
 }
+
+output "cpu_cores" {
+  value = module.vm.cpu_cores
+}
+
+output "disk_size" {
+  value = module.vm.disk_size
+}
