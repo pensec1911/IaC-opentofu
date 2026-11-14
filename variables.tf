@@ -57,3 +57,23 @@ variable "netbox_url" {
   type        = string
   default     = "http://192.168.178.29:8000"
 }
+
+variable "state_passphrase" {
+  description = "Passphrase fuer die State-Verschluesselung (OpenBao tofu-state/encryption, >= 16 Zeichen) — README \"State\""
+  type        = string
+  sensitive   = true
+}
+
+# KV-Pfade (Mount homelab) der API-Tokens. Lokal die schreibenden; der
+# Plan-/Drift-Job in Forgejo Actions setzt die nur lesenden (README "CI").
+variable "proxmox_vault_secret" {
+  description = "KV-Pfad des Proxmox-API-Tokens (Key api_token)"
+  type        = string
+  default     = "proxmox"
+}
+
+variable "netbox_vault_secret" {
+  description = "KV-Pfad des NetBox-API-Tokens (Key api_token)"
+  type        = string
+  default     = "netbox/tofu"
+}
