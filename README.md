@@ -82,19 +82,14 @@ Lokal (beide Dateien gitignored):
 
 Init: `make init` (= `tofu init -backend-config=backend.hcl`).
 
-### Einmalige Migration vom lokalen State
+Migriert vom lokalen `terraform.tfstate` am 2026-11-14 (`tofu init -migrate-state`
+mit einem voruebergehenden `unencrypted`-Fallback, danach entfernt). Auf einer neuen
+Maschine: `backend.hcl` + `state_passphrase` anlegen, `make init`.
 
-1. In OpenBao: `bao kv put -mount=homelab tofu-state/postgres password=<zufall>`,
-   `bao kv put -mount=homelab tofu-state/encryption passphrase=<zufall, >= 32 Zeichen>`.
-2. IaC-salt: `tofu-state` auf forgejo applien (Postgres laeuft).
-3. `backend.hcl` und `state_passphrase` wie oben anlegen, dann
-   `cp terraform.tfstate ~/tfstate-pre-pg.bak && tofu init -backend-config=backend.hcl -migrate-state`.
-   Der `unencrypted`-Fallback liest den alten Klartext-State, geschrieben wird
-   verschluesselt.
-4. `tofu plan` → No changes.
-5. In `providers.tf` die beiden `fallback`-Bloecke und `method "unencrypted"`
-   entfernen, `enforced = true` in `state`/`plan`; lokale `terraform.tfstate*`
-   loeschen (Backup aus 3. erst nach ein paar Tagen).
+**Bekannte Dauer-Diff:** die drei `debian13_template`-VMs zeigen
+`ipv4_addresses`/`ipv6_addresses`/`network_interface_names` `[] -> (known after apply)`
+(berechnete Felder, Templates laufen nie) — schon vor der Migration so. Der
+Drift-Check meldet sie, bis sie weg ist.
 
 ## CI: Plan in PRs + Drift-Check
 
