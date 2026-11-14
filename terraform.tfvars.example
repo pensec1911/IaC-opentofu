@@ -2,4 +2,3 @@ proxmox_endpoint   = "https:/8006"
 proxmox_api_token  = "terraform@pve!tofu-token=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 proxmox_insecure   = true
 target_node        = "pve01"
-vm_ssh_public_key  = "ssh-ed25519 AAAA... deine-public-key"

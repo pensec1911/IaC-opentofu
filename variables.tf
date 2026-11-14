@@ -20,10 +20,6 @@ variable "target_node" {
   type        = string
 }
 
-variable "vm_ssh_public_key" {
-  description = "Öffentlicher SSH-Key, der per cloud-init in die VM injiziert wird"
-  type        = string
-}
 variable "ssh_public_key" {
   description = "SSH-Public-Key für Cloud-Init-User"
   type        = string
@@ -31,7 +27,7 @@ variable "ssh_public_key" {
 variable "vault_address" {
   description = "OpenBao-Endpoint"
   type        = string
-  default     = "http://192.168.178.20:8200"
+  default     = "https://192.168.178.20:8200"
 }
 
 variable "vault_role_id" {

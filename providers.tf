@@ -25,9 +25,7 @@ terraform {
 
   # Client-seitig verschluesselt: in der DB (und deren Backups) liegt nur
   # Chiffretext. Passphrase aus var.state_passphrase (OpenBao
-  # tofu-state/encryption). Der unencrypted-Fallback ist nur fuer die
-  # einmalige Migration des alten lokalen States da — danach raus und
-  # enforced = true (README "State").
+  # tofu-state/encryption). enforced: nie Klartext schreiben (README "State").
   encryption {
     key_provider "pbkdf2" "state" {
       passphrase = var.state_passphrase
@@ -35,19 +33,14 @@ terraform {
     method "aes_gcm" "state" {
       keys = key_provider.pbkdf2.state
     }
-    method "unencrypted" "migrate" {}
 
     state {
-      method = method.aes_gcm.state
-      fallback {
-        method = method.unencrypted.migrate
-      }
+      method   = method.aes_gcm.state
+      enforced = true
     }
     plan {
-      method = method.aes_gcm.state
-      fallback {
-        method = method.unencrypted.migrate
-      }
+      method   = method.aes_gcm.state
+      enforced = true
     }
   }
 }
