@@ -137,12 +137,12 @@ override_resource {
 }
 
 variables {
-  proxmox_endpoint  = "https://proxmox.invalid:8006"
-  target_node       = "pve01"
-  ssh_public_key    = "ssh-ed25519 AAAAtestkey"
-  vault_role_id     = "test-role-id"
-  state_passphrase  = "test-passphrase-not-a-secret"
-  vault_secret_id   = "test-secret-id"
+  proxmox_endpoint = "https://proxmox.invalid:8006"
+  target_node      = "pve01"
+  ssh_public_key   = "ssh-ed25519 AAAAtestkey"
+  vault_role_id    = "test-role-id"
+  state_passphrase = "test-passphrase-not-a-secret"
+  vault_secret_id  = "test-secret-id"
 }
 
 run "fleet_plans_cleanly" {
