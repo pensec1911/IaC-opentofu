@@ -64,6 +64,69 @@ Einmalig, manuell (vor dem ersten Apply mit `netbox.tf`):
    `homelab/data/proxmox`).
 5. `tofu plan` — erwartet: nur `netbox_*`-Ressourcen neu, keine VM-Aenderung.
 
+## State
+
+Der State liegt in Postgres auf forgejo (`192.168.178.29:5432`, DB `tofu`,
+Schema `homelab`; `formulas/tofu-state` in IaC-salt, nightly per pg_dump
+gesichert) — `backend "pg"` in `providers.tf`. Locking macht der Backend selbst
+(Advisory Locks). Der State ist **client-seitig verschluesselt** (`encryption`,
+pbkdf2 + AES-GCM): in der DB und im Backup liegt nur Chiffretext.
+
+Lokal (beide Dateien gitignored):
+
+- `backend.hcl`: `conn_str = "postgres://tofu:<pw>@192.168.178.29:5432/tofu?sslmode=disable"`
+  (Passwort: OpenBao `tofu-state/postgres`, Key `password`)
+- `terraform.tfvars`: `state_passphrase = "<…>"` (OpenBao `tofu-state/encryption`,
+  Key `passphrase`). **Ohne die Passphrase ist der State verloren** — sie liegt
+  nur in OpenBao (und dessen Backup).
+
+Init: `make init` (= `tofu init -backend-config=backend.hcl`).
+
+### Einmalige Migration vom lokalen State
+
+1. In OpenBao: `bao kv put -mount=homelab tofu-state/postgres password=<zufall>`,
+   `bao kv put -mount=homelab tofu-state/encryption passphrase=<zufall, >= 32 Zeichen>`.
+2. IaC-salt: `tofu-state` auf forgejo applien (Postgres laeuft).
+3. `backend.hcl` und `state_passphrase` wie oben anlegen, dann
+   `cp terraform.tfstate ~/tfstate-pre-pg.bak && tofu init -backend-config=backend.hcl -migrate-state`.
+   Der `unencrypted`-Fallback liest den alten Klartext-State, geschrieben wird
+   verschluesselt.
+4. `tofu plan` → No changes.
+5. In `providers.tf` die beiden `fallback`-Bloecke und `method "unencrypted"`
+   entfernen, `enforced = true` in `state`/`plan`; lokale `terraform.tfstate*`
+   loeschen (Backup aus 3. erst nach ein paar Tagen).
+
+## CI: Plan in PRs + Drift-Check
+
+Forgejo Actions (`.forgejo/workflows/`, Runner `docker` auf forgejo):
+
+- `plan.yml` — jeder PR: `tofu plan`, die Ressourcen-Zeilen (`# x will be
+  created` …) und die `Plan:`-Zeile als PR-Kommentar (bei jedem Push
+  aktualisiert). Volle Diff nur im Job-Log.
+- `drift.yml` — taeglich 06:30 UTC auf main: nicht leerer Plan → Issue
+  "Tofu drift: plan not empty" (aktualisiert, schliesst sich bei leerem Plan).
+
+Beide nur `plan`, mit `-lock=false` (blockiert nie ein lokales Apply). `apply`
+bleibt lokal. Die Jobs bekommen **nur lesende Credentials**:
+
+1. Proxmox: `pveum user add tofu-plan@pve`, `pveum acl modify / -user tofu-plan@pve -role PVEAuditor`,
+   `pveum user token add tofu-plan@pve ci --privsep 0` →
+   `bao kv put -mount=homelab proxmox/plan api_token=<user>!<id>=<secret>`.
+2. NetBox: zweiter API-Token fuer `opentofu`, **Write aus** →
+   `bao kv put -mount=homelab netbox/tofu-plan api_token=<token>`.
+3. OpenBao: Policy `tofu-plan` mit nur `read` auf `homelab/data/proxmox/plan` und
+   `homelab/data/netbox/tofu-plan`, AppRole `tofu-plan` mit dieser Policy.
+4. Forgejo → IaC-opentofu → Settings → Actions:
+   - Secrets: `PG_CONN_STR` (wie `conn_str` oben), `STATE_PASSPHRASE`,
+     `VAULT_ROLE_ID` / `VAULT_SECRET_ID` (AppRole `tofu-plan`)
+   - Variables: `PROXMOX_ENDPOINT`, `TARGET_NODE`, `SSH_PUBLIC_KEY`,
+     `VM_SSH_PUBLIC_KEY` — exakt wie in der lokalen `terraform.tfvars`, sonst
+     zeigt der Plan Cloud-Init-Diffs.
+
+Die Workflows waehlen die Lese-Tokens ueber `TF_VAR_proxmox_vault_secret` /
+`TF_VAR_netbox_vault_secret`. Kein SSH-Key im Job: `plan` braucht SSH nicht
+(nur Snippet-Uploads beim Apply).
+
 ## Testing
 
 Three layers, all runnable offline (no real Proxmox or OpenBao access needed) via `mock_provider`:
@@ -74,7 +137,7 @@ Three layers, all runnable offline (no real Proxmox or OpenBao access needed) vi
 | Module unit tests | `make test-modules` | regressions in `modules/vm-instance` and `modules/vm-template` behavior (optional `disk_size`/`vlan_id`, checksum handling, template validation, etc.) — see `<module>/tests/*.tftest.hcl` |
 | Fleet invariants | `make test` | whole-repo checks in `tests/fleet.tftest.hcl`: no two VMs share an `ip_address`, no Proxmox node's combined `memory_mb` exceeds its 16GB budget, no duplicate IP/name among the NetBox entries (incl. unmanaged VMs and devices) |
 
-Run everything with `make ci`. The same steps run in GitHub Actions on every push/PR (`.github/workflows/test.yml`).
+Run everything with `make ci`. The same steps run in GitHub Actions on the GitHub mirror (`.github/workflows/test.yml`); Forgejo runs `.forgejo/workflows/` instead (CI section above).
 
 Requires OpenTofu >= 1.8 (for `mock_provider`/`override_data` in tests).
 

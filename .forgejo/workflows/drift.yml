@@ -1,0 +1,67 @@
+# Nightly `tofu plan` against main: a non-empty plan means someone changed
+# Proxmox/NetBox by hand (or main has unapplied commits). Opens one issue
+# "Tofu drift: plan not empty", updates it on later runs and closes it once
+# the plan is empty again. Same plan-only credentials as plan.yml.
+name: tofu drift
+
+on:
+  schedule:
+    # 06:30 UTC — after the nightly reboots (03:15 Berlin) and self-repair
+    # windows, so a VM mid-reboot isn't reported as drift.
+    - cron: "30 6 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: tofu-drift
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    runs-on: docker
+    timeout-minutes: 20
+    env:
+      # Backend + state encryption (README "State").
+      PG_CONN_STR: ${{ secrets.PG_CONN_STR }}
+      TF_VAR_state_passphrase: ${{ secrets.STATE_PASSPHRASE }}
+      # AppRole tofu-plan: reads only the read-only tokens below.
+      TF_VAR_vault_role_id: ${{ secrets.VAULT_ROLE_ID }}
+      TF_VAR_vault_secret_id: ${{ secrets.VAULT_SECRET_ID }}
+      TF_VAR_proxmox_vault_secret: proxmox/plan
+      TF_VAR_netbox_vault_secret: netbox/tofu-plan
+      # Non-secret, must match the local terraform.tfvars (else cloud-init diffs).
+      TF_VAR_proxmox_endpoint: ${{ vars.PROXMOX_ENDPOINT }}
+      TF_VAR_target_node: ${{ vars.TARGET_NODE }}
+      TF_VAR_ssh_public_key: ${{ vars.SSH_PUBLIC_KEY }}
+      TF_VAR_vm_ssh_public_key: ${{ vars.VM_SSH_PUBLIC_KEY }}
+      TF_IN_AUTOMATION: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: https://github.com/opentofu/setup-opentofu@v1
+        with:
+          tofu_version: "1.13.2"
+          tofu_wrapper: false
+
+      - name: init
+        run: tofu init -input=false
+
+      - name: plan
+        id: plan
+        run: |
+          set +e
+          tofu plan -input=false -lock=false -no-color -detailed-exitcode > plan.txt 2>&1
+          code=$?
+          set -e
+          cat plan.txt
+          echo "exitcode=$code" >> "$GITHUB_OUTPUT"
+
+      - name: report
+        if: always() && steps.plan.outputs.exitcode != ''
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_number }}
+        run: node .forgejo/scripts/report.mjs drift plan.txt ${{ steps.plan.outputs.exitcode }}
+
+      - name: fail on plan error
+        if: steps.plan.outputs.exitcode == '1'
+        run: exit 1

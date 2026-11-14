@@ -142,6 +142,7 @@ variables {
   vm_ssh_public_key = "ssh-ed25519 AAAAtestkey"
   ssh_public_key    = "ssh-ed25519 AAAAtestkey"
   vault_role_id     = "test-role-id"
+  state_passphrase  = "test-passphrase-not-a-secret"
   vault_secret_id   = "test-secret-id"
 }
 

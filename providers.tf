@@ -14,6 +14,42 @@ terraform {
       version = "~> 5.8.0"
     }
   }
+
+  # State in Postgres auf forgejo (formulas/tofu-state in IaC-salt), damit
+  # die Forgejo-Actions-Jobs (plan in PRs, Drift-Check) denselben State sehen.
+  # conn_str kommt aus backend.hcl (lokal, gitignored) bzw. PG_CONN_STR (CI) —
+  # siehe README "State".
+  backend "pg" {
+    schema_name = "homelab"
+  }
+
+  # Client-seitig verschluesselt: in der DB (und deren Backups) liegt nur
+  # Chiffretext. Passphrase aus var.state_passphrase (OpenBao
+  # tofu-state/encryption). Der unencrypted-Fallback ist nur fuer die
+  # einmalige Migration des alten lokalen States da — danach raus und
+  # enforced = true (README "State").
+  encryption {
+    key_provider "pbkdf2" "state" {
+      passphrase = var.state_passphrase
+    }
+    method "aes_gcm" "state" {
+      keys = key_provider.pbkdf2.state
+    }
+    method "unencrypted" "migrate" {}
+
+    state {
+      method = method.aes_gcm.state
+      fallback {
+        method = method.unencrypted.migrate
+      }
+    }
+    plan {
+      method = method.aes_gcm.state
+      fallback {
+        method = method.unencrypted.migrate
+      }
+    }
+  }
 }
 
 provider "vault" {

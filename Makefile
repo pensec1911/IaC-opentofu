@@ -1,6 +1,11 @@
 MODULES := modules/vm-instance modules/vm-template
 
-.PHONY: fmt fmt-check validate test test-modules lint ci
+.PHONY: init fmt fmt-check validate test test-modules lint ci
+
+# Real backend (Postgres on forgejo); conn_str from the gitignored
+# backend.hcl — README "State".
+init:
+	tofu init -backend-config=backend.hcl
 
 fmt:
 	tofu fmt -recursive
