@@ -1,0 +1,44 @@
+# gitleaks config — server-side secret scan (.forgejo/workflows/secret-scan.yml).
+# gitleaks' default ruleset plus the repo's own patterns; the allowlists mirror the hook's
+# exemptions. Identical copy in IaC-salt — keep both in sync by hand.
+title = "homelab"
+
+[extend]
+useDefault = true
+
+# --- house rules the default set doesn't have (same as check-secrets.py) ---------------------
+[[rules]]
+id = "wireguard-key"
+description = "32-byte base64 key (WireGuard private key etc.)"
+regex = '''(?:^|[^A-Za-z0-9+/])([A-Za-z0-9+/]{42}[AEIMQUYcgkosw048]=)(?:[^A-Za-z0-9+/=]|$)'''
+secretGroup = 1
+
+[[rules]]
+id = "crypt-password-hash"
+description = "password hash (crypt)"
+regex = '''\$(?:6|5|y|2[aby])\$(?:[^\s$]*\$){1,2}[./A-Za-z0-9]{20,}'''
+
+[[rules]]
+id = "openbao-token"
+description = "Vault/OpenBao token"
+regex = '''\bhv[sbr]\.[A-Za-z0-9_-]{20,}\b'''
+
+# --- exemptions --------------------------------------------------------------------------------
+[[allowlists]]
+description = "references and verified false positives"
+regexTarget = "line"
+regexes = [
+  '''secret-scan: allow''',           # the hook's per-line exemption
+  '''sdb\.get''',                     # OpenBao reference, resolved at render time
+  '''\{\{.*\}\}''',                   # Jinja expression, not a literal
+]
+
+[[allowlists]]
+description = "OpenTofu provider lock files (h1:/zh: hashes look like 32-byte base64 keys)"
+paths = ['''(^|/)\.terraform\.lock\.hcl$''']
+
+[[allowlists]]
+description = "SSH public keys (host keys in known_hosts pillar, authorized_keys)"
+regexes = [
+  '''^AAAA(?:B3NzaC1yc2E|C3NzaC1lZDI1NTE5|E2VjZHNhLXNoYTItbmlzdHA)[A-Za-z0-9+/=]*$''',
+]
