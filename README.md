@@ -119,9 +119,8 @@ bleibt lokal. Die Jobs bekommen **nur lesende Credentials**:
 4. Forgejo → IaC-opentofu → Settings → Actions:
    - Secrets: `PG_CONN_STR` (wie `conn_str` oben), `STATE_PASSPHRASE`,
      `VAULT_ROLE_ID` / `VAULT_SECRET_ID` (AppRole `tofu-plan`)
-   - Variables: `PROXMOX_ENDPOINT`, `TARGET_NODE`, `SSH_PUBLIC_KEY`,
-     `VM_SSH_PUBLIC_KEY` — exakt wie in der lokalen `terraform.tfvars`, sonst
-     zeigt der Plan Cloud-Init-Diffs.
+   - Variables: `PROXMOX_ENDPOINT`, `TARGET_NODE`, `SSH_PUBLIC_KEY` — exakt wie
+     in der lokalen `terraform.tfvars`, sonst zeigt der Plan Cloud-Init-Diffs.
 
 Die Workflows waehlen die Lese-Tokens ueber `TF_VAR_proxmox_vault_secret` /
 `TF_VAR_netbox_vault_secret`. Kein SSH-Key im Job: `plan` braucht SSH nicht
