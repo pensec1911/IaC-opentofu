@@ -182,7 +182,7 @@ run "installs_salt_master_when_requested" {
   }
 
   assert {
-    condition     = strcontains(proxmox_virtual_environment_file.salt_bootstrap[0].source_raw[0].data, "auto_accept: true")
-    error_message = "Master should be configured to auto-accept minion keys"
+    condition     = strcontains(proxmox_virtual_environment_file.salt_bootstrap[0].source_raw[0].data, "auto_accept: false")
+    error_message = "A rebuilt master must not auto-accept minion keys (IaC-salt formulas/salt-master README)"
   }
 }

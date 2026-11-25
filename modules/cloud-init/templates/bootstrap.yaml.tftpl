@@ -1,0 +1,114 @@
+#cloud-config
+# Salt ist nicht mehr Teil von Debian — in trixie sind die Salt-Pakete komplett
+# entfernt, darum kommen sie aus dem offiziellen Salt-Project-Repo bei Broadcom.
+# curl und gnupg holen wir noch aus Debian selbst, um den Repo-Key importieren
+# zu koennen.
+package_update: true
+packages:
+  - curl
+  - gnupg
+%{ if wireguard != null ~}
+  - wireguard-tools
+%{ endif ~}
+%{ if nftables != "" ~}
+  - nftables
+%{ endif ~}
+
+write_files:
+  # defer, weil write_files sonst in der config-Stage laeuft: das apt-update von
+  # cloud-init wuerde dann auf ein Repo stossen, dessen Keyring erst in runcmd
+  # angelegt wird, und mit einem Fehler abbrechen (cloud-init: "degraded").
+  - path: /etc/apt/sources.list.d/salt.sources
+    defer: true
+    content: |
+      Types: deb
+      URIs: https://packages.broadcom.com/artifactory/saltproject-deb/
+      Suites: stable
+      Components: main
+      Signed-By: /etc/apt/keyrings/salt-archive-keyring.pgp
+
+  # Pin auf die LTS-Linie, damit ein spaeterer Rebuild nicht ungefragt auf eine
+  # neue Major-Version springt und Master/Minion auseinanderlaufen.
+  - path: /etc/apt/preferences.d/salt-pin-1001
+    content: |
+      Package: salt-*
+      Pin: version ${salt_version_pin}
+      Pin-Priority: 1001
+
+%{ if install_salt_master ~}
+  - path: /etc/salt/master.d/auto_accept.conf
+    content: |
+      # Minion-Keys werden von Hand akzeptiert (IaC-salt formulas/salt-master
+      # README "Accepting minion keys"); Salt verwaltet die Datei danach selbst.
+      auto_accept: false
+%{ endif ~}
+%{ if has_minion ~}
+  - path: /etc/salt/minion.d/master.conf
+    content: |
+      master: ${salt_master_address}
+%{ if minion_id != "" ~}
+  # Feste Minion-ID: ohne sie nimmt Salt den FQDN, auf OCI also
+  # <host>.<subnet>.<vcn>.oraclevcn.com statt des VM-Namens.
+  - path: /etc/salt/minion_id
+    content: ${minion_id}
+%{ endif ~}
+%{ endif ~}
+%{ if wireguard != null ~}
+  # Netz-Tunnel (Salt/Backup/Monitoring), unabhaengig von Headscale.
+  - path: /etc/wireguard/wg0.conf
+    permissions: "0600"
+    content: |
+      [Interface]
+      Address = ${wireguard.address}
+%{ if wireguard.listen_port != null ~}
+      ListenPort = ${wireguard.listen_port}
+%{ endif ~}
+      PrivateKey = ${wireguard_private_key}
+%{ for peer in wireguard.peers ~}
+
+      [Peer]
+      PublicKey = ${peer.public_key}
+      AllowedIPs = ${join(", ", peer.allowed_ips)}
+%{ if peer.endpoint != null ~}
+      Endpoint = ${peer.endpoint}
+%{ endif ~}
+%{ if peer.keepalive != null ~}
+      PersistentKeepalive = ${peer.keepalive}
+%{ endif ~}
+%{ endfor ~}
+%{ endif ~}
+%{ if ip_forward ~}
+  - path: /etc/sysctl.d/90-ip-forward.conf
+    content: |
+      net.ipv4.ip_forward = 1
+%{ endif ~}
+%{ if nftables != "" ~}
+  - path: /etc/nftables.conf
+    permissions: "0755"
+    content: |
+      ${indent(6, nftables)}
+%{ endif ~}
+
+# Installation muss in runcmd laufen: die packages-Stage von cloud-init ist
+# durch, bevor das Salt-Repo ueberhaupt eingerichtet ist.
+runcmd:
+%{ if ip_forward ~}
+  - sysctl --system
+%{ endif ~}
+%{ if nftables != "" ~}
+  - systemctl enable --now nftables
+%{ endif ~}
+%{ if wireguard != null ~}
+  - systemctl enable --now wg-quick@wg0
+%{ endif ~}
+  - install -d -m 0755 /etc/apt/keyrings
+  - curl -fsSL https://packages.broadcom.com/artifactory/api/security/keypair/SaltProjectKey/public | gpg --dearmor -o /etc/apt/keyrings/salt-archive-keyring.pgp
+  - apt-get update
+%{ if install_salt_master ~}
+  - apt-get install -y salt-master
+  - systemctl enable --now salt-master
+%{ endif ~}
+%{ if has_minion ~}
+  - apt-get install -y salt-minion
+  - systemctl enable --now salt-minion
+%{ endif ~}

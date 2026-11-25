@@ -9,3 +9,6 @@ override.tf.json
 !*.tfvars.example
 .envrc
 backend.hcl
+# OCI-Image (make oci-image), wird nur hochgeladen
+oci/*.qcow2
+oci/SHA512SUMS

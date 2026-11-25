@@ -62,3 +62,54 @@ jobs:
       - name: fail on plan error
         if: steps.plan.outputs.exitcode == '1'
         run: exit 1
+
+  # Zweites Root-Modul oci/ (eigener State, Schema `oci`). Nur lesend: OCI-User
+  # tofu-plan (OpenBao oci/plan), keine WireGuard-Keys (user_data wird nach
+  # dem ersten Boot ignoriert) — README "OCI".
+  plan-oci:
+    runs-on: docker
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: oci
+    env:
+      PG_CONN_STR: ${{ secrets.PG_CONN_STR }}
+      TF_VAR_state_passphrase: ${{ secrets.STATE_PASSPHRASE }}
+      TF_VAR_vault_role_id: ${{ secrets.VAULT_ROLE_ID }}
+      TF_VAR_vault_secret_id: ${{ secrets.VAULT_SECRET_ID }}
+      TF_VAR_oci_vault_secret: oci/plan
+      TF_VAR_wireguard_from_vault: "false"
+      TF_VAR_ssh_public_key: ${{ vars.SSH_PUBLIC_KEY }}
+      TF_IN_AUTOMATION: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: https://github.com/opentofu/setup-opentofu@v1
+        with:
+          tofu_version: "1.13.2"
+          tofu_wrapper: false
+
+      - name: init
+        run: tofu init -input=false
+
+      - name: plan
+        id: plan
+        run: |
+          set +e
+          tofu plan -input=false -lock=false -no-color -detailed-exitcode > plan.txt 2>&1
+          code=$?
+          set -e
+          cat plan.txt
+          echo "exitcode=$code" >> "$GITHUB_OUTPUT"
+
+      - name: report
+        if: always() && steps.plan.outputs.exitcode != ''
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_number }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: node ../.forgejo/scripts/report.mjs pr plan.txt ${{ steps.plan.outputs.exitcode }} oci
+
+      - name: fail on plan error
+        if: steps.plan.outputs.exitcode == '1'
+        run: exit 1
