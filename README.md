@@ -91,6 +91,78 @@ Maschine: `backend.hcl` + `state_passphrase` anlegen, `make init`.
 (berechnete Felder, Templates laufen nie) — schon vor der Migration so. Der
 Drift-Check meldet sie, bis sie weg ist.
 
+## OCI (cloud-edge)
+
+Eigenes Root-Modul `oci/` fuer die eine Oracle-Cloud-VM `cloud-edge` (VM.Standard.A1.Flex,
+arm64, 1 OCPU / 6 GB, Always Free). Dort laeuft nur Headscale mit eingebautem DERP-Relay
+(IaC-salt `formulas/headscale`) und der WireGuard-Server `10.99.0.1` fuer den
+Verwaltungstunnel zu `gateway` (Salt, Backup, Monitoring). Kein Reverse-Proxy, keine Apps.
+
+- **Eigener State**: gleiche Postgres-DB, Schema `oci`, gleiche Verschluesselung
+  (`state_passphrase`). Ein Proxmox-Apply fasst Oracle nie an und umgekehrt.
+  Init: `make oci-init`, danach `tofu -chdir=oci plan|apply` (gleiche `terraform.tfvars`-Werte
+  `state_passphrase`, `vault_role_id`, `vault_secret_id`, `ssh_public_key` — als
+  `oci/terraform.tfvars` oder `TF_VAR_*`).
+- **Offen** sind nur 443/tcp (Headscale + DERP, Zertifikat per TLS-ALPN-01), 3478/udp (STUN),
+  51820/udp (WireGuard). Die Default-Security-List (Oracle oeffnet dort 22/tcp fuer alle) wird
+  auf Path-MTU-ICMP reduziert. Kein oeffentliches SSH: SSH geht nur ueber `wg0` aus dem LAN,
+  Notzugang ist die Serial Console (Login mit dem Salt-Login-Account `cloud-edge`, sobald der
+  erste Highstate durch ist).
+- **Reservierte Public IP** (`prevent_destroy`): bleibt ueber Stop/Start und Rebuild. Darauf
+  zeigt `hs.ilpaa.xyz` (A-Record **manuell** bei Porkbun — die Porkbun-Provider fuer Tofu sind
+  archiviert bzw. Ein-Personen-Projekte, fuer einen Record, der sich nie aendert, lohnt das nicht).
+- **cloud-init** kommt aus `modules/cloud-init` (dasselbe Bootstrap wie die Proxmox-VMs plus
+  WireGuard, nftables und feste Minion-ID — ohne sie waere der FQDN `cloud-edge.<subnet>.oraclevcn.com`
+  die ID). Wie bei Proxmox wirkt es nur beim ersten Boot: `user_data` steht in
+  `ignore_changes`, Rebuild bewusst per `tofu -chdir=oci apply -replace=oci_core_instance.cloud_edge`.
+- **Restrisiko**: der private WireGuard-Key steht in den Instance-Metadaten (nur IMDSv2, aber fuer
+  jeden lokalen Prozess lesbar) und im verschluesselten State.
+
+### Einmalig, manuell
+
+1. Oracle-Account auf **Pay-As-You-Go** (sonst holt Oracle idle A1-Instanzen zurueck) + Budget-Alarm.
+2. Compartment `homelab`; Gruppe `tofu-admins` mit User `tofu`:
+   `Allow group tofu-admins to manage all-resources in compartment homelab` und
+   `Allow group tofu-admins to read objectstorage-namespaces in tenancy`.
+   Gruppe `tofu-plan` mit User `tofu-plan` (fuer CI): `Allow group tofu-plan to read all-resources in tenancy`.
+3. Je User einen API-Key (`openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out k.pem`,
+   `openssl rsa -pubout -in k.pem`, Public Key in der Konsole hochladen), dann auf dem OpenBao-Host:
+   `bao kv put -mount=homelab oci/api tenancy_ocid=… user_ocid=… fingerprint=… region=eu-frankfurt-1 compartment_ocid=… private_key=@k.pem`
+   (fuer `tofu-plan` dasselbe nach `oci/plan`), danach `shred -u k.pem`.
+4. WireGuard-Keys (beide Endpunkte, ohne Datei):
+   `k=$(wg genkey); bao kv put -mount=homelab wireguard/cloud-edge private_key="$k" public_key="$(echo "$k" | wg pubkey)"; unset k`
+   und dasselbe fuer `wireguard/gateway`.
+5. OpenBao-Policies: `tofu-proxmox` (AppRole `tofu`) `read` auf `homelab/data/oci/api` und
+   `homelab/data/wireguard/*`; `tofu-plan` nur `read` auf `homelab/data/oci/plan` — **keine**
+   WireGuard-Keys (CI rendert Platzhalter, `TF_VAR_wireguard_from_vault=false`).
+
+### Erster Apply (zweistufig, wegen des Images)
+
+Der OCI-Provider prueft eine lokale Upload-Datei bei jedem Plan — CI haette sie nie. Darum laedt
+Tofu das qcow2 nicht selbst hoch:
+
+1. `make oci-image` (laedt `debian-13-genericcloud-arm64.qcow2`, prueft SHA512SUMS).
+2. `tofu -chdir=oci apply -target=oci_objectstorage_bucket.images[0]`.
+3. Upload nach Bucket `homelab-images`, Objektname `debian-13-genericcloud-arm64.qcow2`
+   (Konsole → Object Storage, oder `oci os object put`).
+4. `tofu -chdir=oci apply` — Import (bis ~20 min), UEFI + A1-Shape, Instanz, reservierte IP.
+   „Out of host capacity" → `availability_domain_index` 1 oder 2.
+5. `hs.ilpaa.xyz` A → Output `public_ip` bei Porkbun anlegen (TTL 600).
+6. Pruefen ueber die Serial Console: `cloud-init status` = done, `wg show` zeigt den Listener.
+   Der Salt-Key kommt erst, wenn `gateway` den Tunnel aufbaut; dann auf dem Master
+   `salt-key -a cloud-edge` (IaC-salt formulas/salt-master README "Accepting minion keys").
+
+Danach darf das Objekt aus dem Bucket geloescht werden (`image_source_details` ist ignoriert).
+**Fallback**, falls Import oder cloud-init auf dem Debian-Image nicht funktionieren:
+`use_platform_image = true` nimmt Oracles Ubuntu 24.04 aarch64 (Login-User `ubuntu`).
+
+### CI
+
+`plan.yml` und `drift.yml` haben einen zweiten Job `plan-oci` (Working-Directory `oci/`, eigener
+PR-Kommentar und eigenes Drift-Issue „Tofu drift (oci): …"). Er nutzt den nur lesenden OCI-User
+`tofu-plan` und liest keine WireGuard-Keys. Der Drift-Check meldet z. B. in der Konsole
+geoeffnete NSG-Ports oder eine gestoppte/zurueckgeholte Instanz.
+
 ## CI: Plan in PRs + Drift-Check
 
 Forgejo Actions (`.forgejo/workflows/`, Runner `docker` auf forgejo):
@@ -137,12 +209,14 @@ Die Workflows waehlen die Lese-Tokens ueber `TF_VAR_proxmox_vault_secret` /
 
 ## Testing
 
-Three layers, all runnable offline (no real Proxmox or OpenBao access needed) via `mock_provider`:
+Three layers, all runnable offline (no real Proxmox, OCI or OpenBao access needed) via `mock_provider`:
 
 | Layer | Command | What it catches |
 |---|---|---|
 | Format & syntax | `make fmt-check`, `make validate` | drift, typos, type errors |
 | Module unit tests | `make test-modules` | regressions in `modules/vm-instance` and `modules/vm-template` behavior (optional `disk_size`/`vlan_id`, checksum handling, template validation, etc.) — see `<module>/tests/*.tftest.hcl` |
+| cloud-init | `make test-modules` | `modules/cloud-init`: Bootstrap ohne Netz-Optionen byte-gleich zum bisherigen (kein Snippet-Diff), WireGuard/nftables/Minion-ID korrekt gerendert |
+| OCI | `make test-oci` | `oci/`: nur 443/3478/51820 offen, Default-Security-List ohne 22, Always-Free-Groesse, reservierte IP, IMDSv2, cloud-init mit Tunnel, CI liest keine WireGuard-Keys |
 | Fleet invariants | `make test` | whole-repo checks in `tests/fleet.tftest.hcl`: no two VMs share an `ip_address`, no Proxmox node's combined `memory_mb` exceeds its 16GB budget, no duplicate IP/name among the NetBox entries (incl. unmanaged VMs and devices) |
 
 Run everything with `make ci`. The same steps run in GitHub Actions on the GitHub mirror (`.github/workflows/test.yml`); Forgejo runs `.forgejo/workflows/` instead (CI section above).

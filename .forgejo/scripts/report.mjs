@@ -1,7 +1,11 @@
 // Reports a `tofu plan` from a Forgejo Actions job back to Forgejo.
 //
-//   node report.mjs pr    <plan.txt> <exitcode>   comment on the PR (updated in place)
-//   node report.mjs drift <plan.txt> <exitcode>   open/update/close the drift issue
+//   node report.mjs pr    <plan.txt> <exitcode> [stack]   comment on the PR (updated in place)
+//   node report.mjs drift <plan.txt> <exitcode> [stack]   open/update/close the drift issue
+//
+// stack: optional name of a second root module (e.g. "oci"). Each stack gets
+// its own PR comment and its own drift issue; without it the markers stay
+// the original ones, so existing comments/issues keep being found.
 //
 // Only the resource headers ("# x will be created", "# y has changed") and
 // the summary line are posted — never the attribute diff, which can carry
@@ -12,11 +16,13 @@
 // PR_NUMBER (pr), RUN_URL.
 import { readFileSync } from "node:fs";
 
-const [mode, planFile, exitArg] = process.argv.slice(2);
+const [mode, planFile, exitArg, stack] = process.argv.slice(2);
 const exit = Number(exitArg); // tofu plan -detailed-exitcode: 0 none, 1 error, 2 changes
 const api = `${process.env.GITHUB_SERVER_URL}/api/v1/repos/${process.env.GITHUB_REPOSITORY}`;
-const MARK = mode === "pr" ? "<!-- tofu-plan -->" : "<!-- tofu-drift -->";
-const DRIFT_TITLE = "Tofu drift: plan not empty";
+const suffix = stack ? `:${stack}` : "";
+const MARK = mode === "pr" ? `<!-- tofu-plan${suffix} -->` : `<!-- tofu-drift${suffix} -->`;
+const LABEL = stack ? ` (${stack})` : "";
+const DRIFT_TITLE = `Tofu drift${LABEL}: plan not empty`;
 
 async function call(method, path, body) {
   const res = await fetch(api + path, {
@@ -51,7 +57,7 @@ if (mode === "pr") {
   const n = process.env.PR_NUMBER;
   const comments = await call("GET", `/issues/${n}/comments`);
   const mine = comments.find((c) => c.body.startsWith(MARK));
-  const text = body("tofu plan");
+  const text = body(`tofu plan${LABEL}`);
   if (mine) await call("PATCH", `/issues/comments/${mine.id}`, { body: text });
   else await call("POST", `/issues/${n}/comments`, { body: text });
 } else if (mode === "drift") {
@@ -63,7 +69,7 @@ if (mode === "pr") {
       await call("PATCH", `/issues/${issue.number}`, { state: "closed" });
     }
   } else {
-    const text = body("Nightly drift check");
+    const text = body(`Nightly drift check${LABEL}`);
     if (issue) {
       await call("PATCH", `/issues/${issue.number}`, { body: text });
     } else {

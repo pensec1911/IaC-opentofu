@@ -9,6 +9,15 @@ locals {
   salt_bootstrap_file_id = "${var.snippets_datastore_id}:snippets/${var.name}-salt-bootstrap.yaml"
 }
 
+# Gemeinsames Bootstrap mit oci/ (modules/cloud-init).
+module "cloud_init" {
+  source = "../cloud-init"
+
+  install_salt_master = var.install_salt_master
+  salt_master_address = var.salt_master_address
+  salt_version_pin    = var.salt_version_pin
+}
+
 resource "proxmox_virtual_environment_file" "salt_bootstrap" {
   count = local.needs_salt_bootstrap ? 1 : 0
 
@@ -18,12 +27,7 @@ resource "proxmox_virtual_environment_file" "salt_bootstrap" {
 
   source_raw {
     file_name = "${var.name}-salt-bootstrap.yaml"
-    data = templatefile("${path.module}/templates/salt-bootstrap.yaml.tftpl", {
-      install_salt_master = var.install_salt_master
-      has_minion          = var.salt_master_address != null
-      salt_master_address = var.salt_master_address != null ? var.salt_master_address : ""
-      salt_version_pin    = var.salt_version_pin
-    })
+    data      = module.cloud_init.rendered
   }
 }
 
