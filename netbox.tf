@@ -25,9 +25,10 @@ locals {
   }
 
   # VMs, die laufen, aber nicht (mehr) von Tofu verwaltet werden (vms.tf
-  # auskommentiert, nicht im State). Nur Name/IP/Node — Groesse ist hier unbekannt.
+  # auskommentiert, nicht im State). memory_mb zaehlt im RAM-Budget je Node mit
+  # (outputs.tf memory_by_node_mb).
   netbox_unmanaged_vms = {
-    openbao = { ip = "192.168.178.20/24", node = "pve03" }
+    openbao = { ip = "192.168.178.20/24", node = "pve01", memory_mb = 1024 }
   }
 
   # Minion-ID = VM-Name, also Bindestrich statt des Modul-Unterstrichs.
@@ -47,7 +48,7 @@ locals {
         ip        = vm.ip
         node      = vm.node
         vcpus     = null
-        memory_mb = null
+        memory_mb = vm.memory_mb
         disk_mb   = null
         managed   = false
       }

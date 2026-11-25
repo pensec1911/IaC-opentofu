@@ -186,3 +186,37 @@ run "installs_salt_master_when_requested" {
     error_message = "A rebuilt master must not auto-accept minion keys (IaC-salt formulas/salt-master README)"
   }
 }
+
+run "snippet_with_private_key_uses_ignore_changes_resource" {
+  command = plan
+
+  variables {
+    salt_master_address   = "10.0.0.28"
+    ip_forward            = true
+    wireguard_private_key = "test-private-key"
+    wireguard = {
+      address = "10.99.0.2/24"
+      peers = [{
+        public_key  = "test-peer-key"
+        allowed_ips = ["10.99.0.1/32"]
+        endpoint    = "203.0.113.1:51820"
+        keepalive   = 25
+      }]
+    }
+  }
+
+  assert {
+    condition     = length(proxmox_virtual_environment_file.salt_bootstrap) == 0 && length(proxmox_virtual_environment_file.salt_bootstrap_secret) == 1
+    error_message = "A snippet with a WireGuard private key must go through salt_bootstrap_secret"
+  }
+
+  assert {
+    condition     = strcontains(proxmox_virtual_environment_file.salt_bootstrap_secret[0].source_raw[0].data, "PrivateKey = test-private-key")
+    error_message = "The private key should end up in wg0.conf"
+  }
+
+  assert {
+    condition     = proxmox_virtual_environment_vm.this.initialization[0].vendor_data_file_id == "local:snippets/test-vm-salt-bootstrap.yaml"
+    error_message = "The VM must reference the snippet by its fixed file id"
+  }
+}

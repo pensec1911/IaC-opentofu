@@ -28,6 +28,8 @@ jobs:
       TF_VAR_vault_secret_id: ${{ secrets.VAULT_SECRET_ID }}
       TF_VAR_proxmox_vault_secret: proxmox/plan
       TF_VAR_netbox_vault_secret: netbox/tofu-plan
+      # gateway's WireGuard-Key bleibt aus CI raus (Platzhalter, Snippet ignoriert Inhalt).
+      TF_VAR_wireguard_from_vault: "false"
       # Non-secret, must match the local terraform.tfvars (else cloud-init diffs).
       TF_VAR_proxmox_endpoint: ${{ vars.PROXMOX_ENDPOINT }}
       TF_VAR_target_node: ${{ vars.TARGET_NODE }}

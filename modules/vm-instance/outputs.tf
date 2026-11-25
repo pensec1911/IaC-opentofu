@@ -27,3 +27,14 @@ output "disk_size" {
   description = "Konfigurierte Disk-Groesse in GB (null = Template-Groesse)"
   value       = var.disk_size
 }
+
+output "bootstrap_has_secret" {
+  description = "true = das Snippet enthaelt einen Private Key und liegt in salt_bootstrap_secret (ignore_changes)"
+  value       = local.bootstrap_has_secret
+}
+
+output "bootstrap_rendered" {
+  description = "Gerendertes cloud-init (fuer Tests)"
+  value       = module.cloud_init.rendered
+  sensitive   = true
+}
