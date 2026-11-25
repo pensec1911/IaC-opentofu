@@ -13,13 +13,6 @@ module "jellyfin" {
   ssh_public_key = var.ssh_public_key
 }
 
-#module "tailscale_router" {
-#  source = "./vms/tailscale-router"
-#
-#  template_ids   = local.template_ids
-#  ssh_public_key = var.ssh_public_key
-#}
-
 module "arrstack" {
   source = "./vms/arrstack"
 
@@ -67,6 +60,24 @@ module "forgejo" {
 
 module "salt_master" {
   source = "./vms/salt-master"
+
+  template_ids   = local.template_ids
+  ssh_public_key = var.ssh_public_key
+}
+
+# Verwaltungstunnel zu cloud-edge (oci/) + spaeter Tailscale-Subnet-Router.
+module "gateway" {
+  source = "./vms/gateway"
+
+  template_ids          = local.template_ids
+  ssh_public_key        = var.ssh_public_key
+  wireguard_private_key = local.wg_gateway_private_key
+  cloud_edge_public_key = local.wg_cloud_edge_public_key
+}
+
+# Caddy + Authentik (IaC-salt).
+module "edge" {
+  source = "./vms/edge"
 
   template_ids   = local.template_ids
   ssh_public_key = var.ssh_public_key

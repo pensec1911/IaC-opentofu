@@ -1,6 +1,12 @@
 locals {
   needs_salt_bootstrap = var.install_salt_master || var.salt_master_address != null
 
+  # Snippet mit WireGuard-Private-Key: eigene Resource, die Aenderungen am
+  # Inhalt ignoriert. Der Plan-/Drift-Job in CI liest keine WireGuard-Keys und
+  # rendert einen Platzhalter — ohne ignore_changes meldete er bei jedem Lauf
+  # Drift. Bootstrap-Aenderung fuer so eine VM: `-replace` auf Snippet + VM.
+  bootstrap_has_secret = local.needs_salt_bootstrap && nonsensitive(var.wireguard_private_key != null)
+
   # Fester File-ID-String statt Referenz auf die Snippet-Resource. vendor-data
   # wird nur beim ersten Boot gelesen — referenziert die VM die Resource
   # direkt, baut OpenTofu bei jeder Textaenderung am Bootstrap die komplette VM
@@ -13,13 +19,17 @@ locals {
 module "cloud_init" {
   source = "../cloud-init"
 
-  install_salt_master = var.install_salt_master
-  salt_master_address = var.salt_master_address
-  salt_version_pin    = var.salt_version_pin
+  install_salt_master   = var.install_salt_master
+  salt_master_address   = var.salt_master_address
+  salt_version_pin      = var.salt_version_pin
+  wireguard             = var.wireguard
+  wireguard_private_key = var.wireguard_private_key
+  ip_forward            = var.ip_forward
+  nftables              = var.nftables
 }
 
 resource "proxmox_virtual_environment_file" "salt_bootstrap" {
-  count = local.needs_salt_bootstrap ? 1 : 0
+  count = local.needs_salt_bootstrap && !local.bootstrap_has_secret ? 1 : 0
 
   content_type = "snippets"
   datastore_id = var.snippets_datastore_id
@@ -31,10 +41,30 @@ resource "proxmox_virtual_environment_file" "salt_bootstrap" {
   }
 }
 
+resource "proxmox_virtual_environment_file" "salt_bootstrap_secret" {
+  count = local.bootstrap_has_secret ? 1 : 0
+
+  content_type = "snippets"
+  datastore_id = var.snippets_datastore_id
+  node_name    = var.node_name
+
+  source_raw {
+    file_name = "${var.name}-salt-bootstrap.yaml"
+    data      = module.cloud_init.rendered
+  }
+
+  lifecycle {
+    ignore_changes = [source_raw]
+  }
+}
+
 resource "proxmox_virtual_environment_vm" "this" {
   # Ohne die Resource-Referenz in vendor_data_file_id muss die Reihenfolge
   # explizit sein: das Snippet muss hochgeladen sein, bevor die VM bootet.
-  depends_on = [proxmox_virtual_environment_file.salt_bootstrap]
+  depends_on = [
+    proxmox_virtual_environment_file.salt_bootstrap,
+    proxmox_virtual_environment_file.salt_bootstrap_secret,
+  ]
 
   name      = var.name
   node_name = var.node_name

@@ -105,3 +105,39 @@ variable "salt_version_pin" {
   type        = string
   default     = "3008.*"
 }
+
+# Netz-Optionen fuer modules/cloud-init (Router-/Gateway-VMs). Alle aus = das
+# Snippet bleibt byte-gleich wie bisher.
+variable "wireguard" {
+  description = "Optionaler WireGuard-Tunnel wg0, durchgereicht an modules/cloud-init"
+  type = object({
+    address     = string
+    listen_port = optional(number)
+    peers = list(object({
+      public_key  = string
+      allowed_ips = list(string)
+      endpoint    = optional(string)
+      keepalive   = optional(number)
+    }))
+  })
+  default = null
+}
+
+variable "wireguard_private_key" {
+  description = "Privater WireGuard-Key (OpenBao). Gesetzt = das Snippet enthaelt ein Secret, siehe salt_bootstrap_secret in main.tf."
+  type        = string
+  default     = null
+  sensitive   = true
+}
+
+variable "ip_forward" {
+  description = "IPv4-Forwarding einschalten"
+  type        = bool
+  default     = false
+}
+
+variable "nftables" {
+  description = "Fertiger nft-Regelsatz fuer /etc/nftables.conf (null = nicht anfassen)"
+  type        = string
+  default     = null
+}

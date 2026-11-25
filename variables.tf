@@ -73,3 +73,9 @@ variable "netbox_vault_secret" {
   type        = string
   default     = "netbox/tofu"
 }
+
+variable "wireguard_from_vault" {
+  description = "WireGuard-Keys fuer gateway aus OpenBao lesen. CI (tofu-plan) setzt false und bekommt Platzhalter."
+  type        = bool
+  default     = true
+}

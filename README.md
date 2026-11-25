@@ -163,6 +163,24 @@ PR-Kommentar und eigenes Drift-Issue „Tofu drift (oci): …"). Er nutzt den nu
 `tofu-plan` und liest keine WireGuard-Keys. Der Drift-Check meldet z. B. in der Konsole
 geoeffnete NSG-Ports oder eine gestoppte/zurueckgeholte Instanz.
 
+## gateway + edge (pve01)
+
+- **gateway** (.31, 1 CPU / 1 GB): WireGuard-Client zu cloud-edge (`wg0` 10.99.0.2, Endpoint =
+  reservierte OCI-IP, fest in `vms/gateway/main.tf`), IPv4-Forwarding und nftables. Die
+  `forward`-Chain ist die einzige Stelle, die festlegt, was cloud-edge im LAN erreichen darf
+  (Salt 4505/4506, NFS, Loki, Healthchecks, PatchMon) und umgekehrt (Prometheus-Scrapes, SSH).
+  Spaeter Tailscale-Subnet-Router (IaC-salt). Voraussetzung: FRITZ!Box-Route
+  `10.99.0.0/24 → 192.168.178.31`.
+- Das Snippet von gateway enthaelt den WireGuard-Private-Key (OpenBao `wireguard/gateway`) und
+  liegt deshalb in `salt_bootstrap_secret` mit `ignore_changes`: CI liest keine WireGuard-Keys
+  (`TF_VAR_wireguard_from_vault=false`, Platzhalter) und meldet so keinen Dauer-Drift. Folge:
+  Aenderungen an Tunnel/Firewall wirken nur per Rebuild —
+  `tofu apply -replace='module.gateway.module.vm.proxmox_virtual_environment_file.salt_bootstrap_secret[0]' -replace='module.gateway.module.vm.proxmox_virtual_environment_vm.this'`
+  (zustandsarm; Tailscale braucht danach einen neuen Pre-Auth-Key).
+- **edge** (.30, 2 CPU / 4 GB): normale LAN-VM fuer Caddy + Authentik (IaC-salt).
+- Neue Minions: Keys auf dem Master von Hand akzeptieren (`salt-key -a gateway`, `-a edge`,
+  `-a cloud-edge` sobald der Tunnel steht).
+
 ## CI: Plan in PRs + Drift-Check
 
 Forgejo Actions (`.forgejo/workflows/`, Runner `docker` auf forgejo):
