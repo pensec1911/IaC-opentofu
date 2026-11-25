@@ -86,7 +86,6 @@ resource "oci_core_instance" "cloud_edge" {
   create_vnic_details {
     subnet_id        = oci_core_subnet.public.id
     assign_public_ip = false # reservierte IP unten
-    hostname_label   = "cloud-edge"
     nsg_ids          = [oci_core_network_security_group.cloud_edge.id]
   }
 
