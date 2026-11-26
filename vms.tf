@@ -20,15 +20,14 @@ module "arrstack" {
   ssh_public_key = var.ssh_public_key
 }
 
-# wazuh vorerst abgeschaltet (2026-11-11), um 8 GB auf pve01 freizumachen. Zum
-# Reaktivieren einkommentieren (+ outputs.tf, tests/fleet.tftest.hcl) und in
-# IaC-salt pillar/features.jinja `wazuh: True` setzen.
-#module "wazuh" {
-#  source = "./vms/wazuh"
-#
-#  template_ids   = local.template_ids
-#  ssh_public_key = var.ssh_public_key
-#}
+# wazuh: 2026-11-11 abgeschaltet (8 GB auf pve01), 2026-11-26 wieder an — pve01
+# hat jetzt 32 GB. Agents schaltet IaC-salt pillar/features.jinja `wazuh` frei.
+module "wazuh" {
+  source = "./vms/wazuh"
+
+  template_ids   = local.template_ids
+  ssh_public_key = var.ssh_public_key
+}
 
 #module "omada_controller" {
 #  source = "./vms/omada-controller"

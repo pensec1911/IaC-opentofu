@@ -1,9 +1,9 @@
 locals {
-  # openbao, omada_controller und wazuh sind in vms.tf aktuell auskommentiert.
+  # openbao und omada_controller sind in vms.tf aktuell auskommentiert.
   vm_inventory = {
-    jellyfin = { ip = module.jellyfin.ip_address, node = module.jellyfin.node_name, memory_mb = module.jellyfin.memory_mb, cpu_cores = module.jellyfin.cpu_cores, disk_size = module.jellyfin.disk_size }
-    arrstack = { ip = module.arrstack.ip_address, node = module.arrstack.node_name, memory_mb = module.arrstack.memory_mb, cpu_cores = module.arrstack.cpu_cores, disk_size = module.arrstack.disk_size }
-    #wazuh       = { ip = module.wazuh.ip_address, node = module.wazuh.node_name, memory_mb = module.wazuh.memory_mb, cpu_cores = module.wazuh.cpu_cores, disk_size = module.wazuh.disk_size }
+    jellyfin    = { ip = module.jellyfin.ip_address, node = module.jellyfin.node_name, memory_mb = module.jellyfin.memory_mb, cpu_cores = module.jellyfin.cpu_cores, disk_size = module.jellyfin.disk_size }
+    arrstack    = { ip = module.arrstack.ip_address, node = module.arrstack.node_name, memory_mb = module.arrstack.memory_mb, cpu_cores = module.arrstack.cpu_cores, disk_size = module.arrstack.disk_size }
+    wazuh       = { ip = module.wazuh.ip_address, node = module.wazuh.node_name, memory_mb = module.wazuh.memory_mb, cpu_cores = module.wazuh.cpu_cores, disk_size = module.wazuh.disk_size }
     monitoring  = { ip = module.monitoring.ip_address, node = module.monitoring.node_name, memory_mb = module.monitoring.memory_mb, cpu_cores = module.monitoring.cpu_cores, disk_size = module.monitoring.disk_size }
     homepage    = { ip = module.homepage.ip_address, node = module.homepage.node_name, memory_mb = module.homepage.memory_mb, cpu_cores = module.homepage.cpu_cores, disk_size = module.homepage.disk_size }
     forgejo     = { ip = module.forgejo.ip_address, node = module.forgejo.node_name, memory_mb = module.forgejo.memory_mb, cpu_cores = module.forgejo.cpu_cores, disk_size = module.forgejo.disk_size }

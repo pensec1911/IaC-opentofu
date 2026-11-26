@@ -73,6 +73,10 @@ locals {
       { comment = "tofu-state Postgres (Tofu ueber Tailnet)", proto = "tcp", dport = "5432", source = local.fw_gateway, dest = null },
       { comment = "PatchMon: Agents aller Minions + UI", proto = "tcp", dport = "3001", source = local.fw_minions, dest = null },
     ]
+    wazuh = [
+      { comment = "Wazuh-Dashboard (Caddy, Blackbox)", proto = "tcp", dport = "443", source = local.fw_web, dest = null },
+      { comment = "Wazuh-Agents: Events + Enrollment (LAN; cloud-edge nicht, gateway leitet 1514/1515 nicht weiter)", proto = "tcp", dport = "1514,1515", source = local.fw_lan, dest = null },
+    ]
     edge = [
       { comment = "Caddy HTTPS/HTTP fuer alle", proto = "tcp", dport = "80,443", source = null, dest = null },
       { comment = "Prometheus: Caddy- und Authentik-Metriken", proto = "tcp", dport = "9180,9300", source = local.fw_monitoring, dest = null },
@@ -93,6 +97,7 @@ locals {
     forgejo     = module.forgejo
     edge        = module.edge
     gateway     = module.gateway
+    wazuh       = module.wazuh
   }
 }
 
