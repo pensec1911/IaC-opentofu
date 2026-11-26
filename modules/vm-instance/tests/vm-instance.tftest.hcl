@@ -81,6 +81,28 @@ run "vlan_untagged_by_default" {
   }
 }
 
+run "nic_firewall_on_by_default" {
+  command = plan
+
+  assert {
+    condition     = proxmox_virtual_environment_vm.this.network_device[0].firewall == true
+    error_message = "the NIC firewall flag should default to true (rules: root firewall.tf)"
+  }
+}
+
+run "nic_firewall_can_be_turned_off" {
+  command = plan
+
+  variables {
+    firewall = false
+  }
+
+  assert {
+    condition     = proxmox_virtual_environment_vm.this.network_device[0].firewall == false
+    error_message = "firewall = false should reach the network_device block"
+  }
+}
+
 run "vlan_tag_applied_when_set" {
   command = plan
 

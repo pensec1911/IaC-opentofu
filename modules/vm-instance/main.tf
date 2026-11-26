@@ -94,8 +94,9 @@ resource "proxmox_virtual_environment_vm" "this" {
   }
 
   network_device {
-    bridge  = var.bridge
-    vlan_id = var.vlan_id
+    bridge   = var.bridge
+    vlan_id  = var.vlan_id
+    firewall = var.firewall
   }
 
   initialization {

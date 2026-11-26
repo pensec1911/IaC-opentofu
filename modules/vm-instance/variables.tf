@@ -141,3 +141,14 @@ variable "nftables" {
   type        = string
   default     = null
 }
+
+variable "firewall" {
+  description = <<-EOT
+    Proxmox-Firewall an der NIC (net0 firewall=1). Filtert erst, wenn die
+    Firewall der VM (firewall_options) und die des Clusters an sind — die
+    Regeln stehen zentral in firewall.tf. Allein harmlos: haengt die NIC nur
+    an eine fwbr-Bridge. Aendern geht per Hotplug, ohne Neustart.
+  EOT
+  type        = bool
+  default     = true
+}

@@ -275,3 +275,29 @@ run "ci_never_reads_wireguard_keys" {
     error_message = "With wireguard_from_vault = false no WireGuard secret may be read"
   }
 }
+
+# firewall.tf: jede von Tofu verwaltete VM hat Regeln + scharfe Optionen —
+# eine neue VM ohne Eintrag in fw_vms/fw_rules faellt hier auf.
+run "every_vm_has_firewall_rules" {
+  command = plan
+
+  assert {
+    condition     = alltrue([for name in keys(output.vm_inventory) : contains(keys(proxmox_virtual_environment_firewall_rules.vm), name)])
+    error_message = "A VM in vm_inventory has no entry in firewall.tf (fw_vms + fw_rules)"
+  }
+
+  assert {
+    condition     = alltrue([for o in proxmox_virtual_environment_firewall_options.vm : o.enabled && o.input_policy == "DROP"])
+    error_message = "Every VM firewall must be enabled with input_policy DROP"
+  }
+}
+
+# Aussperr-Schutz: die Cluster-Firewall darf die PVE-Hosts nicht filtern.
+run "cluster_firewall_keeps_hosts_open" {
+  command = plan
+
+  assert {
+    condition     = proxmox_virtual_environment_cluster_firewall.this.input_policy == "ACCEPT"
+    error_message = "Cluster firewall input_policy must stay ACCEPT (else the PVE hosts lock out)"
+  }
+}

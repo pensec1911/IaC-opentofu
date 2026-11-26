@@ -7,8 +7,10 @@ locals {
 module "vm" {
   source = "../../modules/vm-instance"
 
-  name        = "edge"
-  node_name   = local.node
+  name      = "edge"
+  node_name = local.node
+  # Feste ID: die Firewall-Regeln (firewall.tf) haengen an ihr.
+  vm_id       = 106
   template_id = var.template_ids[local.node]
 
   ip_address = "192.168.178.30/24"
