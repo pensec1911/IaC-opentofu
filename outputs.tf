@@ -12,6 +12,14 @@ locals {
     salt_master = { ip = module.salt_master.ip_address, node = module.salt_master.node_name, memory_mb = module.salt_master.memory_mb, cpu_cores = module.salt_master.cpu_cores, disk_size = module.salt_master.disk_size }
   }
 
+  # Physischer RAM je Proxmox-Node, Grenze fuer tests/fleet.tftest.hcl.
+  # pve01 seit 2026-11-26 auf 32 GB aufgeruestet.
+  node_memory_mb = {
+    pve01 = 32768
+    pve02 = 16384
+    pve03 = 16384
+  }
+
   # Inkl. der nicht von Tofu verwalteten VMs (netbox.tf), die laufen ja trotzdem.
   memory_by_node_mb = {
     for node in distinct(concat([for vm in local.vm_inventory : vm.node], [for vm in local.netbox_unmanaged_vms : vm.node])) :
@@ -30,4 +38,9 @@ output "vm_inventory" {
 output "memory_by_node_mb" {
   description = "Summierter RAM-Verbrauch je Proxmox-Node"
   value       = local.memory_by_node_mb
+}
+
+output "node_memory_mb" {
+  description = "Physischer RAM je Proxmox-Node (Grenze fuer memory_by_node_mb)"
+  value       = local.node_memory_mb
 }

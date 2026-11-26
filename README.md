@@ -235,7 +235,7 @@ Three layers, all runnable offline (no real Proxmox, OCI or OpenBao access neede
 | Module unit tests | `make test-modules` | regressions in `modules/vm-instance` and `modules/vm-template` behavior (optional `disk_size`/`vlan_id`, checksum handling, template validation, etc.) — see `<module>/tests/*.tftest.hcl` |
 | cloud-init | `make test-modules` | `modules/cloud-init`: Bootstrap ohne Netz-Optionen byte-gleich zum bisherigen (kein Snippet-Diff), WireGuard/nftables/Minion-ID korrekt gerendert |
 | OCI | `make test-oci` | `oci/`: nur 443/3478/51820 offen, Default-Security-List ohne 22, Always-Free-Groesse, reservierte IP, IMDSv2, cloud-init mit Tunnel, CI liest keine WireGuard-Keys |
-| Fleet invariants | `make test` | whole-repo checks in `tests/fleet.tftest.hcl`: no two VMs share an `ip_address`, no Proxmox node's combined `memory_mb` exceeds its 16GB budget, no duplicate IP/name among the NetBox entries (incl. unmanaged VMs and devices) |
+| Fleet invariants | `make test` | whole-repo checks in `tests/fleet.tftest.hcl`: no two VMs share an `ip_address`, no Proxmox node's combined `memory_mb` exceeds its RAM (`node_memory_mb` in `outputs.tf`: pve01 32 GB, pve02/pve03 16 GB), no duplicate IP/name among the NetBox entries (incl. unmanaged VMs and devices) |
 
 Run everything with `make ci`. The same steps run in GitHub Actions on the GitHub mirror (`.github/workflows/test.yml`); Forgejo runs `.forgejo/workflows/` instead (CI section above).
 

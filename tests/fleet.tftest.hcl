@@ -193,12 +193,17 @@ run "no_two_vms_share_an_ip_address" {
   }
 }
 
-run "no_node_exceeds_its_16gb_ram_budget" {
+run "no_node_exceeds_its_ram" {
   command = plan
 
   assert {
-    condition     = alltrue([for mb in values(output.memory_by_node_mb) : mb <= 16384])
-    error_message = "A Proxmox node's combined VM memory_mb exceeds its 16GB capacity"
+    condition     = alltrue([for node, mb in output.memory_by_node_mb : contains(keys(output.node_memory_mb), node)])
+    error_message = "A VM sits on a Proxmox node missing from node_memory_mb (outputs.tf)"
+  }
+
+  assert {
+    condition     = alltrue([for node, mb in output.memory_by_node_mb : mb <= lookup(output.node_memory_mb, node, 0)])
+    error_message = "A Proxmox node's combined VM memory_mb exceeds its physical RAM (node_memory_mb in outputs.tf)"
   }
 }
 
