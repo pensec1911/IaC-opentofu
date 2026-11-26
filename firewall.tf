@@ -58,6 +58,7 @@ locals {
     monitoring = [
       { comment = "Web-UIs: Grafana, Prometheus, Alertmanager, CyberChef, IT-Tools", proto = "tcp", dport = "3000,9090,9093,8081,8082", source = local.fw_edge, dest = null },
       { comment = "homepage-Widget -> Prometheus", proto = "tcp", dport = "9090", source = local.fw_homepage, dest = null },
+      { comment = "Prometheus/Alertmanager-API: /homelab-status, capacity.py (Tailnet via gateway), salt-master", proto = "tcp", dport = "9090,9093", source = "${local.fw_gateway},${local.fw_salt}", dest = null },
       { comment = "Loki: alloy auf allen Minions", proto = "tcp", dport = "3100", source = local.fw_minions, dest = null },
       { comment = "TrueNAS Graphite -> graphite_exporter", proto = "tcp", dport = "9109", source = local.fw_truenas, dest = null },
     ]
