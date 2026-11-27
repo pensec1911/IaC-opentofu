@@ -181,6 +181,15 @@ geoeffnete NSG-Ports oder eine gestoppte/zurueckgeholte Instanz.
 - Neue Minions: Keys auf dem Master von Hand akzeptieren (`salt-key -a gateway`, `-a edge`,
   `-a cloud-edge` sobald der Tunnel steht).
 
+## docs (pve01)
+
+- **docs** (.21, 4 CPU / 6 GB / 40 GB, vm_id 110): Paperless-ngx, spaeter Nextcloud (IaC-salt).
+  RAM schon fuer beide. Dokumente auf der NAS: NFS-Freigabe
+  `/mnt/pool01/documents/paperless` (Child-Dataset, eigene Freigabe, nur Host .21,
+  Owner 979:979), Nextcloud spaeter `documents/nextcloud` genauso.
+- Firewall: Paperless :8000 nur von edge + monitoring; Nextcloud-Port kommt mit der Formula.
+- Nach dem Apply: `salt-key -a docs` auf dem Master.
+
 ## CI: Plan in PRs + Drift-Check
 
 Forgejo Actions (`.forgejo/workflows/`, Runner `docker` auf forgejo):

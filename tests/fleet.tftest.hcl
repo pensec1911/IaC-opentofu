@@ -162,6 +162,13 @@ override_resource {
   }
 }
 
+override_resource {
+  target = module.docs.module.vm.proxmox_virtual_environment_file.salt_bootstrap
+  values = {
+    id = "local:snippets/docs-salt-bootstrap.yaml"
+  }
+}
+
 # gateway's Snippet traegt den WireGuard-Key -> eigene Resource (modules/vm-instance).
 override_resource {
   target = module.gateway.module.vm.proxmox_virtual_environment_file.salt_bootstrap_secret

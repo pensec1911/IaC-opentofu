@@ -9,6 +9,7 @@ locals {
     forgejo     = { ip = module.forgejo.ip_address, node = module.forgejo.node_name, memory_mb = module.forgejo.memory_mb, cpu_cores = module.forgejo.cpu_cores, disk_size = module.forgejo.disk_size }
     gateway     = { ip = module.gateway.ip_address, node = module.gateway.node_name, memory_mb = module.gateway.memory_mb, cpu_cores = module.gateway.cpu_cores, disk_size = module.gateway.disk_size }
     edge        = { ip = module.edge.ip_address, node = module.edge.node_name, memory_mb = module.edge.memory_mb, cpu_cores = module.edge.cpu_cores, disk_size = module.edge.disk_size }
+    docs        = { ip = module.docs.ip_address, node = module.docs.node_name, memory_mb = module.docs.memory_mb, cpu_cores = module.docs.cpu_cores, disk_size = module.docs.disk_size }
     salt_master = { ip = module.salt_master.ip_address, node = module.salt_master.node_name, memory_mb = module.salt_master.memory_mb, cpu_cores = module.salt_master.cpu_cores, disk_size = module.salt_master.disk_size }
   }
 
