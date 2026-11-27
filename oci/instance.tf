@@ -48,6 +48,9 @@ module "cloud_init" {
   wireguard = {
     address     = local.wg_address
     listen_port = local.wg_port
+    # 1420 wie auf gateway (eth 1500 - 80). Ohne: 8920 vom Jumbo-VNIC, das
+    # erste Backup von cloud-edge hing deshalb jede Nacht bis zum Timeout.
+    mtu = 1420
     peers = [{
       public_key = local.wg_gateway_pub_key
       # gateway selbst + das LAN dahinter (Master, NAS, Loki, ...). Die

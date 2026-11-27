@@ -63,6 +63,9 @@ write_files:
 %{ if wireguard.listen_port != null ~}
       ListenPort = ${wireguard.listen_port}
 %{ endif ~}
+%{ if wireguard.mtu != null ~}
+      MTU = ${wireguard.mtu}
+%{ endif ~}
       PrivateKey = ${wireguard_private_key}
 %{ for peer in wireguard.peers ~}
 

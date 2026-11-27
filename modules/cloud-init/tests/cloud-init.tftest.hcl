@@ -46,6 +46,7 @@ run "wireguard_forwarding_nftables_and_minion_id" {
     wireguard = {
       address     = "10.99.0.1/24"
       listen_port = 51820
+      mtu         = 1420
       peers = [{
         public_key  = "test-peer-key"
         allowed_ips = ["10.99.0.2/32", "192.168.178.0/24"]
@@ -61,6 +62,11 @@ run "wireguard_forwarding_nftables_and_minion_id" {
   assert {
     condition     = strcontains(output.rendered, "ListenPort = 51820") && !strcontains(output.rendered, "Endpoint =")
     error_message = "Server-Seite: ListenPort ja, Endpoint nein"
+  }
+
+  assert {
+    condition     = strcontains(output.rendered, "      MTU = 1420\n")
+    error_message = "MTU muss in wg0.conf stehen, wenn gesetzt"
   }
 
   assert {
@@ -99,5 +105,10 @@ run "client_side_has_endpoint_and_keepalive" {
   assert {
     condition     = strcontains(output.rendered, "Endpoint = 198.51.100.1:51820") && strcontains(output.rendered, "PersistentKeepalive = 25") && !strcontains(output.rendered, "ListenPort")
     error_message = "Client-Seite: Endpoint + Keepalive, kein ListenPort"
+  }
+
+  assert {
+    condition     = !strcontains(output.rendered, "MTU =")
+    error_message = "Ohne mtu keine MTU-Zeile (wg-quick waehlt selbst)"
   }
 }

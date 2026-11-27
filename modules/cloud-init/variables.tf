@@ -36,6 +36,10 @@ variable "wireguard" {
   type = object({
     address     = string
     listen_port = optional(number)
+    # Ohne MTU leitet wg-quick sie vom Uplink ab: auf OCI (Jumbo-VNIC, 9000)
+    # wird das 8920, die Strecke nach Hause traegt aber nur ~1500. Grosse
+    # Pakete gehen dann verloren (NFS-Schreiben haengt, Lesen geht).
+    mtu = optional(number)
     peers = list(object({
       public_key  = string
       allowed_ips = list(string)
