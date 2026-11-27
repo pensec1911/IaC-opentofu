@@ -82,6 +82,14 @@ module "edge" {
   ssh_public_key = var.ssh_public_key
 }
 
+# Paperless-ngx, spaeter Nextcloud (IaC-salt).
+module "docs" {
+  source = "./vms/docs"
+
+  template_ids   = local.template_ids
+  ssh_public_key = var.ssh_public_key
+}
+
 locals {
   template_ids = { for node, tpl in module.debian13_template : node => tpl.vm_id }
 }

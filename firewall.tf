@@ -81,6 +81,9 @@ locals {
       { comment = "Caddy HTTPS/HTTP fuer alle", proto = "tcp", dport = "80,443", source = null, dest = null },
       { comment = "Prometheus: Caddy- und Authentik-Metriken", proto = "tcp", dport = "9180,9300", source = local.fw_monitoring, dest = null },
     ]
+    docs = [
+      { comment = "Paperless-ngx (Caddy, Blackbox)", proto = "tcp", dport = "8000", source = local.fw_web, dest = null },
+    ]
     gateway = [
       { comment = "WireGuard von cloud-edge (Portweiterleitung FRITZ!Box)", proto = "udp", dport = "51820", source = null, dest = null },
       { comment = "Tailscale direkte Verbindungen", proto = "udp", dport = "41641", source = null, dest = null },
@@ -98,6 +101,7 @@ locals {
     edge        = module.edge
     gateway     = module.gateway
     wazuh       = module.wazuh
+    docs        = module.docs
   }
 }
 
