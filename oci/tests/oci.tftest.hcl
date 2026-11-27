@@ -195,3 +195,12 @@ run "ci_never_reads_wireguard_keys" {
     error_message = "Mit wireguard_from_vault=false darf kein WireGuard-Secret gelesen werden"
   }
 }
+
+run "offsite_bucket_private" {
+  command = plan
+
+  assert {
+    condition     = oci_objectstorage_bucket.restic.access_type == "NoPublicAccess" && oci_objectstorage_bucket.restic.compartment_id == "ocid1.compartment.oc1..test"
+    error_message = "Der restic-Offsite-Bucket muss privat sein und im homelab-Compartment liegen"
+  }
+}

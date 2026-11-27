@@ -156,6 +156,22 @@ Danach darf das Objekt aus dem Bucket geloescht werden (`image_source_details` i
 **Fallback**, falls Import oder cloud-init auf dem Debian-Image nicht funktionieren:
 `use_platform_image = true` nimmt Oracles Ubuntu 24.04 aarch64 (Login-User `ubuntu`).
 
+### Offsite-Bucket (restic)
+
+`oci/offsite.tf` legt den privaten Bucket `homelab-restic` an (`prevent_destroy`). Der salt-master
+kopiert nachts jedes restic-Repo vom NAS dorthin (IaC-salt `formulas/backup-offsite`). IAM macht
+Tofu bewusst nicht (tofu-admins darf keine User/Gruppen, und der Secret Key laege im State):
+
+1. `tofu -chdir=oci apply` (nur der Bucket), Output `restic_offsite_repository` notieren.
+2. Konsole → Identity → Default-Domain: Gruppe `restic-offsite`, User `restic-offsite` (ohne
+   Konsolen-Passwort, nur in dieser Gruppe), unter dessen Capabilities nur „Customer secret
+   keys" anlassen.
+3. Policy `restic-offsite` im Compartment `homelab`:
+   `Allow group restic-offsite to read buckets in compartment homelab where target.bucket.name = 'homelab-restic'`
+   `Allow group restic-offsite to manage objects in compartment homelab where target.bucket.name = 'homelab-restic'`
+4. User → Customer secret keys → Generate. Access Key + Secret (wird nur einmal gezeigt) nach
+   OpenBao, wie in IaC-salt `formulas/backup-offsite/README.md` beschrieben.
+
 ### CI
 
 `plan.yml` und `drift.yml` haben einen zweiten Job `plan-oci` (Working-Directory `oci/`, eigener

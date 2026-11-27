@@ -17,3 +17,8 @@ output "shape" {
   description = "Shape und Groesse (fuer Tests/Uebersicht)"
   value       = { shape = local.shape, ocpus = local.ocpus, memory_gb = local.memory_gb, boot_volume_gb = local.boot_volume_gb }
 }
+
+output "restic_offsite_repository" {
+  description = "restic-Repo-Basis der Offsite-Kopie (IaC-salt pillar/backup-offsite.sls, je Minion /<minion> dahinter)"
+  value       = "s3:https://${data.oci_objectstorage_namespace.this.namespace}.compat.objectstorage.${nonsensitive(local.oci.region)}.oraclecloud.com/${oci_objectstorage_bucket.restic.name}"
+}
